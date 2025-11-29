@@ -1,9 +1,10 @@
 "use client";
 import { Loading } from "@/components/common/Loading";
 import { candidatoService, cargoService, HistorialAplicacion, historialService } from "@/lib/api/services";
+import { useAuth } from "@/lib/contexts/AuthContext";
 import { useNotification } from "@/lib/contexts/NotificationContext";
 import { Candidato, Cargo } from "@/lib/types";
-import { ArrowLeft, CheckCircle, Clock, TrendingUp, Users, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, LogOut, TrendingUp, Users, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -32,6 +33,7 @@ interface CandidatoSugerido extends EnrichedCandidate {
 export default function CandidatosDashboard() {
   const router = useRouter();
   const { showNotification } = useNotification();
+  const { logout, empresa, user } = useAuth();
 
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
@@ -237,7 +239,7 @@ export default function CandidatosDashboard() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header con efecto glassmorphism */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-neutral-200/50 hover:shadow-xl transition-all duration-300">
-          <div className="flex items-center gap-4 mb-2">
+          <div className="flex items-center justify-between mb-2">
             <button
               onClick={() => router.push('/dashboard')}
               className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-900 hover:text-white rounded-lg transition-all duration-300 group"
@@ -245,6 +247,33 @@ export default function CandidatosDashboard() {
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               Volver
             </button>
+            <div className="flex items-center gap-4">
+              {(empresa || user) && (
+                <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                    {(empresa?.nombre || user?.nombre || 'E').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-neutral-900">
+                      {empresa?.nombre || user?.nombre || 'Empresa'}
+                    </p>
+                    <p className="text-xs text-neutral-600">
+                      {empresa?.email || user?.email || ''}
+                    </p>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  logout();
+                  router.push('/');
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-all duration-300 group border border-red-200 hover:border-red-300"
+              >
+                <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                Cerrar sesión
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-1 h-12 bg-gradient-to-b from-purple-500 via-blue-500 to-emerald-500 rounded-full"></div>
