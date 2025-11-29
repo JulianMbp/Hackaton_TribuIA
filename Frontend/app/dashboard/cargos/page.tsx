@@ -1,20 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card } from "@/components/common/Card";
 import { Button } from "@/components/common/Button";
+import { Card } from "@/components/common/Card";
 import { Loading } from "@/components/common/Loading";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { confirmarOfertaIA, generateCargoIA, IAOpcionCargo } from "@/lib/api/iaService";
 import { cargoService } from "@/lib/api/services";
+import { useAuth } from "@/lib/contexts/AuthContext";
 import { useNotification } from "@/lib/contexts/NotificationContext";
 import { Cargo } from "@/lib/types";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function CargosPage() {
   const router = useRouter();
+  const { user, role } = useAuth();
   const [prompt, setPrompt] = useState("");
-  const [suggestions, setSuggestions] = useState<Cargo[]>([]);
+  const [suggestions, setSuggestions] = useState<IAOpcionCargo[]>([]);
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -31,41 +34,43 @@ export default function CargosPage() {
     setLoading(false);
   };
 
-  // Fake AI Generator
   const generateWithAI = async () => {
     if (!prompt.trim()) return;
+    if (!user || role !== 'empresa') {
+      showNotification('error', 'Debes iniciar sesión como empresa para generar cargos con IA');
+      return;
+    }
+
     setGenerating(true);
-
-    setTimeout(() => {
-      const newSuggestion: Cargo = {
-        id: crypto.randomUUID(),
-        nombre: `Cargo basado en: ${prompt}`,
-        descripcion: "Descripción generada automáticamente basada en el prompt.",
-        criteriosTecnicos: [
-          "Trabajo en equipo",
-          "Comunicación",
-          "Liderazgo",
-          "Pensamiento crítico",
-        ],
-        empresaId: "pending-ia",
-        createdAt: new Date().toISOString(),
-      };
-
-      setSuggestions((prev) => [...prev, newSuggestion]);
-      setGenerating(false);
+    try {
+      const opciones = await generateCargoIA(user.id, prompt, 'es');
+      setSuggestions(opciones);
       setPrompt("");
-    }, 1200);
+    } catch (error) {
+      console.error(error);
+      showNotification('error', 'No se pudo generar el cargo con IA');
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const saveCargo = async (cargo: Cargo) => {
-    const response = await cargoService.create(cargo);
-    if (response.success) {
-      showNotification("success", "Cargo guardado exitosamente");
-      setSuggestions((prev) => prev.filter((s) => s.id !== cargo.id));
-      loadCargos();
-    } else {
-      showNotification("error", "No se pudo guardar el cargo");
+  const saveCargo = async (opcion: IAOpcionCargo) => {
+    if (!user || role !== 'empresa') {
+      showNotification('error', 'Debes iniciar sesión como empresa para crear la vacante');
+      return;
     }
+
+    const ok = await confirmarOfertaIA(user.id, opcion);
+
+    if (!ok) {
+      showNotification('error', 'No se pudo crear la vacante');
+      return;
+    }
+
+    showNotification('success', 'Vacante creada y publicada correctamente');
+    // Eliminamos la opción seleccionada de la lista y recargamos los cargos reales desde el backend
+    setSuggestions((prev) => prev.filter((s) => s.id_opcion !== opcion.id_opcion));
+    loadCargos();
   };
 
   const deleteSuggestion = (id: string) => {
@@ -136,20 +141,22 @@ export default function CargosPage() {
             <h2 className="text-xl font-bold mb-4 text-neutral-900 dark:text-white">Sugerencias generadas</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               {suggestions.map((s, index) => (
-                <div key={s.id} style={{ animationDelay: `${index * 100}ms` }} className="animate-fade-in-up">
+                <div key={s.id_opcion} style={{ animationDelay: `${index * 100}ms` }} className="animate-fade-in-up">
                   <Card className="p-4 md:p-6 space-y-3 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                    <h3 className="text-base md:text-lg font-semibold text-neutral-900 dark:text-white">{s.nombre}</h3>
+                    <h3 className="text-base md:text-lg font-semibold text-neutral-900 dark:text-white">{s.titulo}</h3>
                     <p className="text-xs md:text-sm text-neutral-700 dark:text-neutral-300">{s.descripcion}</p>
 
-                    <ul className="text-xs md:text-sm list-disc ml-5 text-neutral-700 dark:text-neutral-300">
-                      {s.criteriosTecnicos.map((c, i) => (
-                        <li key={i}>{c}</li>
-                      ))}
-                    </ul>
+                    {s.requisitos && s.requisitos.length > 0 && (
+                      <ul className="text-xs md:text-sm list-disc ml-5 text-neutral-700 dark:text-neutral-300">
+                        {s.requisitos.map((c, i) => (
+                          <li key={i}>{c}</li>
+                        ))}
+                      </ul>
+                    )}
 
                     <div className="flex flex-col sm:flex-row gap-2 mt-4">
                       <Button className="flex-1 w-full text-sm" onClick={() => saveCargo(s)}>
-                        Guardar
+                        Crear vacante
                       </Button>
 
                       <Button
@@ -188,19 +195,38 @@ export default function CargosPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-              {cargos.map((cargo, index) => (
-                <div key={cargo.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-fade-in-up">
-                  <Card className="p-4 md:p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700">
-                    <h3 className="text-base md:text-lg font-semibold mb-2 text-neutral-900 dark:text-white">{cargo.nombre}</h3>
-                    <p className="text-xs md:text-sm text-neutral-700 dark:text-neutral-300 mb-3">{cargo.descripcion}</p>
-                    <ul className="list-disc ml-5 text-xs md:text-sm space-y-1 text-neutral-700 dark:text-neutral-300">
-                      {cargo.criteriosTecnicos.map((c, i) => (
-                        <li key={i}>{c}</li>
-                      ))}
-                    </ul>
-                  </Card>
-                </div>
-              ))}
+              {cargos.map((cargo, index) => {
+                // Normalizamos los criterios técnicos a partir de lo que venga de la BD
+                const criterios =
+                  cargo.criteriosTecnicos && cargo.criteriosTecnicos.length > 0
+                    ? cargo.criteriosTecnicos
+                    : cargo.skills_requeridos
+                    ? cargo.skills_requeridos
+                        .split(/[,;\n]/)
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                    : [];
+
+                return (
+                  <div key={cargo.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-fade-in-up">
+                    <Card className="p-4 md:p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700">
+                      <h3 className="text-base md:text-lg font-semibold mb-2 text-neutral-900 dark:text-white">
+                        {cargo.nombre}
+                      </h3>
+                      <p className="text-xs md:text-sm text-neutral-700 dark:text-neutral-300 mb-3">
+                        {cargo.descripcion}
+                      </p>
+                      {criterios.length > 0 && (
+                        <ul className="list-disc ml-5 text-xs md:text-sm space-y-1 text-neutral-700 dark:text-neutral-300">
+                          {criterios.map((c, i) => (
+                            <li key={i}>{c}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </Card>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

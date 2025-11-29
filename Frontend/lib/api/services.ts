@@ -2,18 +2,18 @@
 // API SERVICES - BUSINESS LOGIC LAYER
 // ============================================
 
-import { apiClient } from './client';
-import { API_ENDPOINTS } from './config';
 import {
-  Empresa,
-  Candidato,
-  Entrevista,
-  Resultado,
-  Cargo,
   ApiResponse,
+  Candidato,
+  Cargo,
+  Empresa,
+  Entrevista,
   Pregunta,
   Respuesta,
+  Resultado,
 } from '@/lib/types';
+import { apiClient } from './client';
+import { API_ENDPOINTS } from './config';
 
 // ============================================
 // AUTH SERVICES
@@ -63,7 +63,15 @@ export const candidatoService = {
     telefono?: string;
     cargoId: string;
   }): Promise<ApiResponse<Candidato>> => {
-    return apiClient.post(API_ENDPOINTS.CANDIDATOS, data);
+    // Adaptamos al esquema real de la tabla `candidatos`
+    const payload: any = {
+      nombre: data.nombre,
+      email: data.email,
+      password: 'temporal', // TODO: ajustar si se gestiona login de candidatos
+      telefono: data.telefono,
+      cargo_aplicado: data.cargoId,
+    };
+    return apiClient.post(API_ENDPOINTS.CANDIDATOS, payload);
   },
 
   uploadCV: async (candidatoId: string, file: File): Promise<ApiResponse<{ cvUrl: string; cvTexto: string }>> => {
@@ -132,6 +140,8 @@ export const resultadoService = {
 
 export const cargoService = {
   getAll: async (): Promise<ApiResponse<Cargo[]>> => {
+    // La API devuelve los campos tal como están en la BD (snake_case).
+    // Aquí simplemente tipamos la respuesta como Cargo[], que ya contempla esos campos.
     return apiClient.get(API_ENDPOINTS.CARGOS);
   },
 
@@ -144,7 +154,13 @@ export const cargoService = {
     descripcion: string;
     criteriosTecnicos: string[];
   }): Promise<ApiResponse<Cargo>> => {
-    return apiClient.post(API_ENDPOINTS.CARGOS, data);
+    // El backend espera `skills_requeridos` como texto plano.
+    const payload = {
+      nombre: data.nombre,
+      descripcion: data.descripcion,
+      skills_requeridos: data.criteriosTecnicos.join(', '),
+    };
+    return apiClient.post(API_ENDPOINTS.CARGOS, payload);
   },
 
   update: async (
@@ -155,7 +171,15 @@ export const cargoService = {
       criteriosTecnicos?: string[];
     }
   ): Promise<ApiResponse<Cargo>> => {
-    return apiClient.put(API_ENDPOINTS.CARGO_BY_ID(id), data);
+    const payload: any = {};
+
+    if (data.nombre !== undefined) payload.nombre = data.nombre;
+    if (data.descripcion !== undefined) payload.descripcion = data.descripcion;
+    if (data.criteriosTecnicos !== undefined) {
+      payload.skills_requeridos = data.criteriosTecnicos.join(', ');
+    }
+
+    return apiClient.put(API_ENDPOINTS.CARGO_BY_ID(id), payload);
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {

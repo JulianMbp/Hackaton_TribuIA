@@ -1,79 +1,197 @@
 "use client";
-import React, { useState } from "react";
-import { Users, CheckCircle, XCircle, Clock, TrendingUp, ArrowLeft } from "lucide-react";
+import { Loading } from "@/components/common/Loading";
+import { candidatoService, cargoService } from "@/lib/api/services";
+import { useNotification } from "@/lib/contexts/NotificationContext";
+import { Candidato, Cargo } from "@/lib/types";
+import { ArrowLeft, CheckCircle, Clock, TrendingUp, Users, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-interface Candidato {
-  id: string;
-  nombre: string;
-  profesion: string;
-  experiencia: string;
-  estado: "aprobado" | "rechazado" | "pendiente";
-  fechaPostulacion: string;
-}
+import { useEffect, useMemo, useState } from "react";
 
 interface Postulacion {
   id: string;
   cargo: string;
   estado: "Activa" | "Pendiente" | "Cerrada";
-  candidatos: Candidato[];
+  candidatos: EnrichedCandidate[];
 }
 
-interface CandidatoSugerido {
+type CandidateStatus = "aprobado" | "rechazado" | "pendiente";
+
+interface EnrichedCandidate {
   id: string;
   nombre: string;
   profesion: string;
   experiencia: string;
+  estado: CandidateStatus;
+  fechaPostulacion: string;
+}
+
+interface CandidatoSugerido extends EnrichedCandidate {
   match: number;
 }
 
 export default function CandidatosDashboard() {
   const router = useRouter();
-  const [postulaciones] = useState<Postulacion[]>([
-    {
-      id: "1",
-      cargo: "Frontend Developer",
-      estado: "Activa",
-      candidatos: [
-        { id: "c1", nombre: "Ana María Torres", profesion: "Frontend React", experiencia: "3 años", estado: "aprobado", fechaPostulacion: "2025-01-10" },
-        { id: "c2", nombre: "Pedro Sánchez", profesion: "Frontend Vue", experiencia: "2 años", estado: "rechazado", fechaPostulacion: "2025-01-12" },
-        { id: "c3", nombre: "Sofia Martínez", profesion: "Full Stack", experiencia: "4 años", estado: "aprobado", fechaPostulacion: "2025-01-15" },
-        { id: "c4", nombre: "Luis Rodríguez", profesion: "Frontend Angular", experiencia: "1 año", estado: "pendiente", fechaPostulacion: "2025-01-18" },
-        { id: "c5", nombre: "María González", profesion: "Frontend React", experiencia: "5 años", estado: "aprobado", fechaPostulacion: "2025-01-20" },
-      ]
-    },
-    {
-      id: "2",
-      cargo: "Diseñador UI/UX",
-      estado: "Pendiente",
-      candidatos: [
-        { id: "c6", nombre: "Carlos Gómez", profesion: "Diseñador UX", experiencia: "4 años", estado: "aprobado", fechaPostulacion: "2025-01-08" },
-        { id: "c7", nombre: "Diana López", profesion: "UI Designer", experiencia: "3 años", estado: "pendiente", fechaPostulacion: "2025-01-14" },
-        { id: "c8", nombre: "Roberto Díaz", profesion: "Product Designer", experiencia: "6 años", estado: "aprobado", fechaPostulacion: "2025-01-16" },
-      ]
-    },
-    {
-      id: "3",
-      cargo: "Backend NodeJS",
-      estado: "Cerrada",
-      candidatos: [
-        { id: "c9", nombre: "Miguel Ángel", profesion: "Backend Developer", experiencia: "5 años", estado: "aprobado", fechaPostulacion: "2024-12-20" },
-        { id: "c10", nombre: "Laura Ramírez", profesion: "DevOps Engineer", experiencia: "4 años", estado: "rechazado", fechaPostulacion: "2024-12-22" },
-        { id: "c11", nombre: "Jorge Castro", profesion: "Backend NodeJS", experiencia: "3 años", estado: "rechazado", fechaPostulacion: "2024-12-28" },
-        { id: "c12", nombre: "Patricia Ruiz", profesion: "Full Stack", experiencia: "7 años", estado: "aprobado", fechaPostulacion: "2025-01-02" },
-      ]
-    },
-  ]);
+  const { showNotification } = useNotification();
 
-  const [sugeridos] = useState<CandidatoSugerido[]>([
-    { id: "s1", nombre: "Laura Ramírez", profesion: "Frontend React", experiencia: "3 años", match: 92 },
-    { id: "s2", nombre: "Carlos Gómez", profesion: "Diseñador UX", experiencia: "4 años", match: 87 },
-  ]);
+  const [cargos, setCargos] = useState<Cargo[]>([]);
+  const [candidatos, setCandidatos] = useState<Candidato[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [selectedCandidate, setSelectedCandidate] = useState<CandidatoSugerido | null>(sugeridos[0]);
+  // Postulaciones derivadas de cargos + candidatos:
+  // - Si no hay candidatos, igual mostramos las vacantes con 0 candidatos.
+  // - Vinculamos candidatos al cargo por `cargo_aplicado` (id de cargo o nombre).
+  const postulaciones: Postulacion[] = useMemo(() => {
+    if (!cargos.length) return [];
+
+    const map: Record<string, { cargo: Cargo; candidatos: EnrichedCandidate[] }> = {};
+
+    // Inicializar todas las vacantes con 0 candidatos
+    cargos.forEach((cargo) => {
+      map[cargo.id] = { cargo, candidatos: [] };
+    });
+
+    // Función auxiliar para encontrar el id de cargo al que pertenece un candidato
+    const findCargoIdForCandidate = (c: Candidato): string | null => {
+      if (!c.cargo_aplicado) return null;
+
+      // 1) Intentar por id de cargo (UUID)
+      const byId = cargos.find((cg) => cg.id === c.cargo_aplicado);
+      if (byId) return byId.id;
+
+      // 2) Intentar por nombre (caso legacy donde se guarda el título)
+      const lowerApplied = c.cargo_aplicado.toLowerCase();
+      const byName = cargos.find(
+        (cg) => cg.nombre && cg.nombre.toLowerCase() === lowerApplied
+      );
+      return byName ? byName.id : null;
+    };
+
+    // Asignar candidatos a sus cargos
+    candidatos.forEach((c) => {
+      const cargoId = findCargoIdForCandidate(c);
+      if (!cargoId || !map[cargoId]) return;
+
+      const experiencia =
+        typeof c.experiencia_anios === 'number'
+          ? `${c.experiencia_anios} años`
+          : 'Sin dato';
+
+      const profesion = c.skills || 'Perfil general';
+
+      const fechaPostulacion = c.created_at
+        ? new Date(c.created_at).toISOString().slice(0, 10)
+        : '';
+
+      const estado: CandidateStatus = 'pendiente';
+
+      map[cargoId].candidatos.push({
+        id: c.id,
+        nombre: c.nombre,
+        profesion,
+        experiencia,
+        estado,
+        fechaPostulacion,
+      });
+    });
+
+    // Transformar a estructura de Postulacion
+    const result: Postulacion[] = Object.values(map).map(({ cargo, candidatos }) => {
+      const estadoCargo = (cargo.estado || '').toLowerCase();
+      const estado: Postulacion['estado'] =
+        estadoCargo === 'activo'
+          ? 'Activa'
+          : estadoCargo === 'pausado'
+          ? 'Pendiente'
+          : 'Cerrada';
+
+      return {
+        id: cargo.id,
+        cargo: cargo.nombre,
+        estado,
+        candidatos,
+      };
+    });
+
+    // Ordenamos por fecha de creación descendente
+    return result.sort((a, b) => {
+      const ca = cargos.find((c) => c.id === a.id)?.created_at || '';
+      const cb = cargos.find((c) => c.id === b.id)?.created_at || '';
+      return cb.localeCompare(ca);
+    });
+  }, [cargos, candidatos]);
+
+  // Candidatos sugeridos simples: top por años de experiencia
+  const sugeridos: CandidatoSugerido[] = useMemo(() => {
+    if (!candidatos.length) return [];
+
+    const enriched = candidatos.map<CandidatoSugerido>((c) => {
+      const experiencia =
+        typeof c.experiencia_anios === 'number'
+          ? `${c.experiencia_anios} años`
+          : 'Sin dato';
+
+      const profesion = c.skills || 'Perfil general';
+
+      // Match simple basado en años de experiencia (normalizado máximo 10)
+      const exp = typeof c.experiencia_anios === 'number' ? c.experiencia_anios : 0;
+      const match = Math.min(100, Math.max(50, Math.round((exp / 10) * 100)));
+
+      const fechaPostulacion = c.created_at
+        ? new Date(c.created_at).toISOString().slice(0, 10)
+        : '';
+
+      return {
+        id: c.id,
+        nombre: c.nombre,
+        profesion,
+        experiencia,
+        estado: 'pendiente',
+        fechaPostulacion,
+        match,
+      };
+    });
+
+    // Ordenamos por match descendente y nos quedamos con los primeros 5
+    return enriched.sort((a, b) => b.match - a.match).slice(0, 5);
+  }, [candidatos]);
+
+  const [selectedCandidate, setSelectedCandidate] = useState<CandidatoSugerido | null>(null);
   const [selectedPostulacion, setSelectedPostulacion] = useState<Postulacion | null>(null);
 
-  const calcularEstadisticas = (candidatos: Candidato[]) => {
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [cargosRes, candidatosRes] = await Promise.all([
+          cargoService.getAll(),
+          candidatoService.getAll(),
+        ]);
+
+        if (cargosRes.success && cargosRes.data) {
+          setCargos(cargosRes.data);
+        }
+
+        if (candidatosRes.success && candidatosRes.data) {
+          setCandidatos(candidatosRes.data);
+        }
+      } catch (error) {
+        console.error(error);
+        showNotification('error', 'No se pudieron cargar candidatos y vacantes');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [showNotification]);
+
+  useEffect(() => {
+    if (!selectedCandidate && sugeridos.length > 0) {
+      setSelectedCandidate(sugeridos[0]);
+    }
+  }, [sugeridos, selectedCandidate]);
+
+  const calcularEstadisticas = (candidatos: EnrichedCandidate[]) => {
     const total = candidatos.length;
     const aprobados = candidatos.filter(c => c.estado === "aprobado").length;
     const rechazados = candidatos.filter(c => c.estado === "rechazado").length;
@@ -91,6 +209,14 @@ export default function CandidatosDashboard() {
     };
     return classes[estado as keyof typeof classes] || "";
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-neutral-100 to-neutral-50 p-6">
+        <Loading text="Cargando candidatos y postulaciones..." />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-neutral-100 to-neutral-50 p-6 relative overflow-hidden">

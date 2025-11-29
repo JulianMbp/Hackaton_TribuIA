@@ -11,6 +11,8 @@ export const API_CONFIG = {
 export const API_ENDPOINTS = {
   // Auth
   AUTH_LOGIN: '/api/auth/login',
+  AUTH_LOGIN_EMPRESA: '/api/auth/login/empresa',
+  AUTH_LOGIN_CANDIDATO: '/api/auth/login/candidato',
   AUTH_REGISTER: '/api/auth/register',
   AUTH_ME: '/api/auth/me',
 

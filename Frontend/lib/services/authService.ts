@@ -1,8 +1,9 @@
 // ============================================
-// AUTH SERVICE - AUTHENTICATION LOGIC (MOCK)
+// AUTH SERVICE - AUTHENTICATION LOGIC
 // ============================================
-// Este servicio simula la autenticación mientras no esté conectado a Turso DB
-// TODO: Reemplazar con llamadas reales a la base de datos
+// Servicio de autenticación conectado al backend
+
+import { API_CONFIG, API_ENDPOINTS } from '@/lib/api/config';
 
 export interface LoginEmpresaData {
   email: string;
@@ -11,7 +12,7 @@ export interface LoginEmpresaData {
 
 export interface LoginCandidatoData {
   email: string;
-  documento: string;
+  password: string; // Nota: Si en el frontend se usa 'documento', se puede cambiar
 }
 
 export interface AuthResponse {
@@ -23,65 +24,120 @@ export interface AuthResponse {
       id: string;
       email: string;
       nombre: string;
-      rol: 'empresa' | 'candidato';
+      role: 'empresa' | 'candidato';
     };
   };
+  error?: string;
 }
 
 /**
- * Mock login para empresa
- * TODO: Conectar con Turso Database
+ * Login para empresa - Conectado al backend
  */
 export const loginEmpresa = async (data: LoginEmpresaData): Promise<AuthResponse> => {
-  // Simulación de delay de red
-  await new Promise((resolve) => setTimeout(resolve, 800));
-
-  // Mock: Siempre retorna éxito en modo demo
-  return {
-    success: true,
-    message: 'Login exitoso',
-    data: {
-      token: 'mock-token-empresa-' + Date.now(),
-      user: {
-        id: 'empresa-123',
-        email: data.email,
-        nombre: 'Empresa Demo',
-        rol: 'empresa',
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.AUTH_LOGIN_EMPRESA}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    },
-  };
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Error al iniciar sesión',
+        error: result.error || result.message,
+      };
+    }
+
+    // Estandarizar el formato de respuesta
+    return {
+      success: true,
+      message: result.message || 'Login exitoso',
+      data: {
+        token: result.data.token,
+        user: {
+          id: result.data.user.id,
+          email: result.data.user.email,
+          nombre: result.data.user.nombre,
+          role: result.data.user.role,
+        },
+      },
+    };
+  } catch (error: any) {
+    console.error('Error en loginEmpresa:', error);
+    return {
+      success: false,
+      message: 'Error de conexión',
+      error: error.message || 'No se pudo conectar con el servidor',
+    };
+  }
 };
 
 /**
- * Mock login para candidato
- * TODO: Conectar con Turso Database
+ * Login para candidato - Conectado al backend
  */
 export const loginCandidato = async (data: LoginCandidatoData): Promise<AuthResponse> => {
-  // Simulación de delay de red
-  await new Promise((resolve) => setTimeout(resolve, 800));
-
-  // Mock: Siempre retorna éxito en modo demo
-  return {
-    success: true,
-    message: 'Login exitoso',
-    data: {
-      token: 'mock-token-candidato-' + Date.now(),
-      user: {
-        id: 'candidato-' + data.documento,
-        email: data.email,
-        nombre: 'Candidato Demo',
-        rol: 'candidato',
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.AUTH_LOGIN_CANDIDATO}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    },
-  };
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Error al iniciar sesión',
+        error: result.error || result.message,
+      };
+    }
+
+    // Estandarizar el formato de respuesta
+    return {
+      success: true,
+      message: result.message || 'Login exitoso',
+      data: {
+        token: result.data.token,
+        user: {
+          id: result.data.user.id,
+          email: result.data.user.email,
+          nombre: result.data.user.nombre,
+          role: result.data.user.role,
+        },
+      },
+    };
+  } catch (error: any) {
+    console.error('Error en loginCandidato:', error);
+    return {
+      success: false,
+      message: 'Error de conexión',
+      error: error.message || 'No se pudo conectar con el servidor',
+    };
+  }
 };
 
 /**
  * Almacenar datos de autenticación en localStorage
+ * Usa 'token' para compatibilidad con apiClient
  */
 export const storeAuthData = (token: string, user: any) => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('auth_token', token);
+    localStorage.setItem('token', token);
+    localStorage.setItem('auth_token', token); // Duplicado para compatibilidad
     localStorage.setItem('auth_user', JSON.stringify(user));
   }
 };
@@ -91,7 +147,7 @@ export const storeAuthData = (token: string, user: any) => {
  */
 export const getAuthData = () => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
     const userStr = localStorage.getItem('auth_user');
 
     if (token && userStr) {
@@ -112,6 +168,7 @@ export const getAuthData = () => {
  */
 export const clearAuthData = () => {
   if (typeof window !== 'undefined') {
+    localStorage.removeItem('token');
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
   }
@@ -130,36 +187,6 @@ export const isAuthenticated = (): boolean => {
  */
 export const getUserRole = (): 'empresa' | 'candidato' | null => {
   const authData = getAuthData();
-  return authData?.user?.rol || null;
+  // Compatibilidad con 'rol' y 'role'
+  return authData?.user?.role || authData?.user?.rol || null;
 };
-
-// ============================================
-// FUNCIONES PARA CONEXIÓN FUTURA CON TURSO DB
-// ============================================
-
-/**
- * TODO: Implementar cuando Turso DB esté configurado
- *
- * import { createClient } from '@libsql/client';
- *
- * const tursoClient = createClient({
- *   url: process.env.TURSO_DATABASE_URL!,
- *   authToken: process.env.TURSO_AUTH_TOKEN!,
- * });
- *
- * export const loginEmpresaDB = async (data: LoginEmpresaData) => {
- *   const result = await tursoClient.execute({
- *     sql: 'SELECT * FROM empresas WHERE email = ? AND password = ?',
- *     args: [data.email, hashPassword(data.password)],
- *   });
- *   // ... lógica de autenticación
- * };
- *
- * export const loginCandidatoDB = async (data: LoginCandidatoData) => {
- *   const result = await tursoClient.execute({
- *     sql: 'SELECT * FROM candidatos WHERE email = ? AND documento = ?',
- *     args: [data.email, data.documento],
- *   });
- *   // ... lógica de autenticación
- * };
- */

@@ -1,23 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/common/Card';
+import { Loading } from '@/components/common/Loading';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { candidatoService, cargoService } from '@/lib/api/services';
+import { useNotification } from '@/lib/contexts/NotificationContext';
+import { Candidato, Cargo } from '@/lib/types';
 import {
   ArrowLeft,
+  Calendar,
+  DollarSign,
+  Edit,
+  Eye,
+  Filter,
+  MapPin,
   Plus,
   Search,
-  MapPin,
-  DollarSign,
-  Users,
-  Calendar,
-  Eye,
-  Edit,
   Trash2,
-  Filter,
+  Users,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 
 interface Vacante {
   id: string;
@@ -35,90 +39,91 @@ interface Vacante {
 
 export default function VacantesPage() {
   const router = useRouter();
+  const { showNotification } = useNotification();
+
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+  const [cargos, setCargos] = useState<Cargo[]>([]);
+  const [candidatos, setCandidatos] = useState<Candidato[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Datos Mock
-  const [vacantes] = useState<Vacante[]>([
-    {
-      id: '1',
-      titulo: 'Desarrollador Full Stack Senior',
-      departamento: 'Tecnología',
-      ubicacion: 'Ciudad de México, CDMX',
-      modalidad: 'remoto',
-      tipoContrato: 'Tiempo Completo',
-      salarioMin: '$40,000',
-      salarioMax: '$60,000',
-      estado: 'activa',
-      postulantes: 24,
-      fechaCreacion: '2025-11-20',
-    },
-    {
-      id: '2',
-      titulo: 'Diseñador UI/UX',
-      departamento: 'Diseño',
-      ubicacion: 'Guadalajara, JAL',
-      modalidad: 'hibrido',
-      tipoContrato: 'Tiempo Completo',
-      salarioMin: '$30,000',
-      salarioMax: '$45,000',
-      estado: 'activa',
-      postulantes: 18,
-      fechaCreacion: '2025-11-18',
-    },
-    {
-      id: '3',
-      titulo: 'Product Manager',
-      departamento: 'Producto',
-      ubicacion: 'Monterrey, NL',
-      modalidad: 'presencial',
-      tipoContrato: 'Tiempo Completo',
-      salarioMin: '$50,000',
-      salarioMax: '$70,000',
-      estado: 'pausada',
-      postulantes: 12,
-      fechaCreacion: '2025-11-15',
-    },
-    {
-      id: '4',
-      titulo: 'Backend Developer Node.js',
-      departamento: 'Tecnología',
-      ubicacion: 'Remoto',
-      modalidad: 'remoto',
-      tipoContrato: 'Tiempo Completo',
-      salarioMin: '$35,000',
-      salarioMax: '$55,000',
-      estado: 'activa',
-      postulantes: 31,
-      fechaCreacion: '2025-11-25',
-    },
-    {
-      id: '5',
-      titulo: 'Marketing Digital Specialist',
-      departamento: 'Marketing',
-      ubicacion: 'Ciudad de México, CDMX',
-      modalidad: 'hibrido',
-      tipoContrato: 'Tiempo Completo',
-      salarioMin: '$25,000',
-      salarioMax: '$40,000',
-      estado: 'cerrada',
-      postulantes: 45,
-      fechaCreacion: '2025-11-10',
-    },
-    {
-      id: '6',
-      titulo: 'DevOps Engineer',
-      departamento: 'Tecnología',
-      ubicacion: 'Remoto',
-      modalidad: 'remoto',
-      tipoContrato: 'Tiempo Completo',
-      salarioMin: '$45,000',
-      salarioMax: '$65,000',
-      estado: 'activa',
-      postulantes: 19,
-      fechaCreacion: '2025-11-22',
-    },
-  ]);
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [cargosRes, candidatosRes] = await Promise.all([
+          cargoService.getAll(),
+          candidatoService.getAll(),
+        ]);
+
+        if (cargosRes.success && cargosRes.data) {
+          setCargos(cargosRes.data);
+        }
+
+        if (candidatosRes.success && candidatosRes.data) {
+          setCandidatos(candidatosRes.data);
+        }
+      } catch (error) {
+        console.error(error);
+        showNotification('error', 'No se pudieron cargar las vacantes');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [showNotification]);
+
+  // Transformamos cargos reales -> modelo de vacantes para la UI
+  const vacantes: Vacante[] = useMemo(() => {
+    if (!cargos.length) return [];
+
+    return cargos.map((cargo) => {
+      const modalidadRaw = (cargo.modalidad || '').toLowerCase();
+      const modalidad: Vacante['modalidad'] =
+        modalidadRaw === 'remoto' || modalidadRaw === 'remote'
+          ? 'remoto'
+          : modalidadRaw === 'híbrido' || modalidadRaw === 'hibrido'
+          ? 'hibrido'
+          : 'presencial';
+
+      const estadoRaw = (cargo.estado || '').toLowerCase();
+      const estado: Vacante['estado'] =
+        estadoRaw === 'activo'
+          ? 'activa'
+          : estadoRaw === 'pausado'
+          ? 'pausada'
+          : 'cerrada';
+
+      // Contamos postulantes a partir de candidatos cuyo cargo_aplicado coincide con el nombre del cargo
+      const postulantes = candidatos.filter(
+        (c) => c.cargo_aplicado && c.cargo_aplicado.toLowerCase() === (cargo.nombre || '').toLowerCase()
+      ).length;
+
+      const salarioMin =
+        typeof cargo.salario_min === 'number' ? `$${cargo.salario_min.toLocaleString('es-CO')}` : 'No informado';
+      const salarioMax =
+        typeof cargo.salario_max === 'number' ? `$${cargo.salario_max.toLocaleString('es-CO')}` : 'No informado';
+
+      const fechaCreacion = cargo.created_at
+        ? new Date(cargo.created_at).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+
+      return {
+        id: cargo.id,
+        titulo: cargo.nombre,
+        departamento: 'General', // No tenemos departamento en el modelo aún
+        ubicacion: 'No especificada',
+        modalidad,
+        tipoContrato: 'Tiempo Completo', // Placeholder hasta que exista en la BD
+        salarioMin,
+        salarioMax,
+        estado,
+        postulantes,
+        fechaCreacion,
+      };
+    });
+  }, [cargos, candidatos]);
 
   const modalidadConfig = {
     remoto: { label: 'Remoto', color: 'bg-green-100 text-green-700' },
@@ -147,6 +152,14 @@ export default function VacantesPage() {
     activas: vacantes.filter((v) => v.estado === 'activa').length,
     totalPostulantes: vacantes.reduce((acc, v) => acc + v.postulantes, 0),
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <Loading text="Cargando vacantes..." />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

@@ -4,31 +4,42 @@
 // LOGIN EMPRESA PAGE - COMPANY AUTHENTICATION
 // ============================================
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Building2, Mail, Lock, ArrowLeft } from 'lucide-react';
-import { Input } from '@/components/common/Input';
-import { Button } from '@/components/common/Button';
+import { loginEmpresa, storeAuthData } from '@/lib/services/authService';
+import { ArrowLeft, Building2, Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
 
 export default function LoginEmpresaPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Formulario empresa enviado');
     setLoading(true);
+    setError(null);
 
-    // Simulación de login sin validación
-    // TODO: Conectar con Turso Database cuando esté listo
-    setTimeout(() => {
-      console.log('Redirigiendo a /dashboard');
+    try {
+      const response = await loginEmpresa({ email, password });
+
+      if (response.success && response.data) {
+        // Almacenar datos de autenticación
+        storeAuthData(response.data.token, response.data.user);
+        
+        // Redirigir al dashboard
+        router.push('/dashboard');
+      } else {
+        setError(response.message || response.error || 'Error al iniciar sesión');
+      }
+    } catch (err: any) {
+      console.error('Error en login:', err);
+      setError('Error de conexión. Por favor, intenta de nuevo.');
+    } finally {
       setLoading(false);
-      router.push('/dashboard');
-    }, 1000);
+    }
   };
 
   return (
@@ -101,6 +112,13 @@ export default function LoginEmpresaPage() {
               </div>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
+
             {/* Forgot Password Link */}
             <div className="flex items-center justify-end">
               <Link
@@ -152,13 +170,6 @@ export default function LoginEmpresaPage() {
           </div>
         </div>
 
-        {/* Info Message */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-xs text-blue-800 text-center">
-            <strong>Modo Demo:</strong> Este login aún no está conectado a la base de datos.
-            Puedes ingresar con cualquier email y contraseña.
-          </p>
-        </div>
       </div>
     </div>
   );

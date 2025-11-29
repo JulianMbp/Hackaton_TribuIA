@@ -2,35 +2,23 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Protected routes that require authentication
-const protectedRoutes = ['/dashboard'];
+const protectedRoutes = {
+  empresa: ['/dashboard'],
+  candidato: ['/panel-candidato'],
+};
 
 // Public routes that don't require authentication
-const publicRoutes = ['/auth/login', '/auth/register', '/candidate/register'];
+const publicRoutes = ['/auth/login', '/auth/register', '/candidate/register', '/'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // DESHABILITADO TEMPORALMENTE PARA LOGIN MOCK
-  // TODO: Habilitar cuando se conecte con Turso DB
+  // NOTA: El middleware de Next.js se ejecuta en el servidor y no puede acceder a localStorage.
+  // La protección de rutas se maneja en el cliente mediante componentes o hooks.
+  // Para una protección más robusta en producción, considerar usar cookies httpOnly.
 
-  // Check if the route is protected
-  // const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
-
-  // Check if user has token
-  // const token = request.cookies.get('token')?.value || '';
-
-  // Redirect to login if accessing protected route without token
-  // if (isProtectedRoute && !token) {
-  //   const loginUrl = new URL('/auth/login', request.url);
-  //   return NextResponse.redirect(loginUrl);
-  // }
-
-  // Redirect to dashboard if accessing auth pages with valid token
-  // const isAuthRoute = pathname.startsWith('/auth');
-  // if (isAuthRoute && token) {
-  //   const dashboardUrl = new URL('/dashboard', request.url);
-  //   return NextResponse.redirect(dashboardUrl);
-  // }
+  // Por ahora, permitir todas las rutas y dejar que el cliente maneje la autenticación
+  // Las páginas protegidas deben verificar la autenticación usando el AuthContext
 
   return NextResponse.next();
 }

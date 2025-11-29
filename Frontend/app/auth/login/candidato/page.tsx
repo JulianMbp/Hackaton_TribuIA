@@ -4,31 +4,42 @@
 // LOGIN CANDIDATO PAGE - CANDIDATE AUTHENTICATION
 // ============================================
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { UserCircle2, Mail, FileText, ArrowLeft } from 'lucide-react';
-import { Input } from '@/components/common/Input';
-import { Button } from '@/components/common/Button';
+import { loginCandidato, storeAuthData } from '@/lib/services/authService';
+import { ArrowLeft, Lock, Mail, UserCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
 
 export default function LoginCandidatoPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [documento, setDocumento] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Formulario candidato enviado');
     setLoading(true);
+    setError(null);
 
-    // Simulación de login sin validación
-    // TODO: Conectar con Turso Database cuando esté listo
-    setTimeout(() => {
-      console.log('Redirigiendo a /panel-candidato');
+    try {
+      const response = await loginCandidato({ email, password });
+
+      if (response.success && response.data) {
+        // Almacenar datos de autenticación
+        storeAuthData(response.data.token, response.data.user);
+        
+        // Redirigir al panel del candidato
+        router.push('/panel-candidato');
+      } else {
+        setError(response.message || response.error || 'Error al iniciar sesión');
+      }
+    } catch (err: any) {
+      console.error('Error en login:', err);
+      setError('Error de conexión. Por favor, intenta de nuevo.');
+    } finally {
       setLoading(false);
-      router.push('/panel-candidato');
-    }, 1000);
+    }
   };
 
   return (
@@ -80,29 +91,33 @@ export default function LoginCandidatoPage() {
               </div>
             </div>
 
-            {/* Documento Input */}
+            {/* Password Input */}
             <div>
-              <label htmlFor="documento" className="block text-sm font-medium text-neutral-900 mb-2">
-                Documento / Identificación
+              <label htmlFor="password" className="block text-sm font-medium text-neutral-900 mb-2">
+                Contraseña
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FileText className="h-5 w-5 text-neutral-400" />
+                  <Lock className="h-5 w-5 text-neutral-400" />
                 </div>
                 <input
-                  id="documento"
-                  type="text"
-                  value={documento}
-                  onChange={(e) => setDocumento(e.target.value)}
-                  placeholder="12345678"
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
                   className="block w-full pl-10 pr-3 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent outline-none transition-all"
                   required
                 />
               </div>
-              <p className="mt-2 text-xs text-neutral-500">
-                Ingresa tu número de documento sin puntos ni guiones
-              </p>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
 
             {/* Submit Button */}
             <button
@@ -145,13 +160,6 @@ export default function LoginCandidatoPage() {
           </div>
         </div>
 
-        {/* Info Message */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-xs text-blue-800 text-center">
-            <strong>Modo Demo:</strong> Este login aún no está conectado a la base de datos.
-            Puedes ingresar con cualquier email y documento.
-          </p>
-        </div>
 
         {/* Additional Info */}
         <div className="mt-6 text-center">

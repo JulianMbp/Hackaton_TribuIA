@@ -13,10 +13,19 @@ export interface Empresa {
 export interface Cargo {
   id: string;
   nombre: string;
-  descripcion: string;
-  criteriosTecnicos: string[];
-  empresaId: string;
-  createdAt: string;
+  // Texto descriptivo del puesto (puede venir null desde la BD)
+  descripcion: string | null;
+  // Array usado en el frontend (por ejemplo para sugerencias de IA)
+  criteriosTecnicos?: string[];
+  // Campos reales que vienen desde la BD (snake_case)
+  empresa_id?: string | null;
+  salario_min?: number | null;
+  salario_max?: number | null;
+  modalidad?: string | null;
+  skills_requeridos?: string | null;
+  nivel_experiencia?: string | null;
+  estado?: string | null;
+  created_at?: string;
 }
 
 export interface Candidato {
@@ -24,12 +33,17 @@ export interface Candidato {
   nombre: string;
   email: string;
   telefono?: string;
-  cargoId: string;
-  cargo?: Cargo;
-  cvUrl?: string;
-  cvTexto?: string;
-  status: 'pending' | 'in_interview' | 'completed' | 'rejected';
-  createdAt: string;
+  // Campos alineados con la tabla `candidatos`
+  pais?: string | null;
+  ciudad?: string | null;
+  experiencia_anios?: number | null;
+  educacion?: string | null;
+  skills?: string | null;
+  cargo_aplicado?: string | null;
+  portafolio_url?: string | null;
+  github_url?: string | null;
+  descripcion?: string | null;
+  created_at?: string;
 }
 
 export interface Entrevista {
@@ -91,10 +105,19 @@ export interface ApiResponse<T = any> {
   message?: string;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  nombre: string;
+  role: 'empresa' | 'candidato';
+}
+
 export interface AuthState {
-  empresa: Empresa | null;
+  user: User | null;
+  empresa: Empresa | null; // Mantener para compatibilidad hacia atrás
   token: string | null;
   isAuthenticated: boolean;
+  role?: 'empresa' | 'candidato' | null;
 }
 
 export interface InterviewState {
