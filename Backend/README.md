@@ -1,86 +1,76 @@
-# Proyecto Express
+# Backend – Orquestador de Reclutamiento sobre Supabase
 
-Un proyecto básico de Express.js con estructura organizada y configuración lista para desarrollo.
+API REST construida con Node.js + Express que orquesta el flujo de reclutamiento entre empresas y candidatos usando PostgreSQL (Supabase) como base de datos principal. [attached_file:2]  
+El sistema se integra con Supabase Storage y un workflow de n8n para recibir CVs en PDF, procesarlos con IA y registrar automáticamente candidatos, CVs e historial de postulaciones. [attached_file:2]
 
-## 🚀 Características
+---
 
-- ✅ Express.js servidor web
-- ✅ CORS habilitado
-- ✅ Middleware para JSON
-- ✅ Variables de entorno con dotenv
-- ✅ Estructura de carpetas organizada
-- ✅ Manejo de errores básico
-- ✅ Nodemon para desarrollo
+## 1. Tecnologías y características
 
-## 📁 Estructura del proyecto
+- Node.js + Express como servidor HTTP principal de la API. [attached_file:2]  
+- PostgreSQL (instancia de Supabase) accesible mediante el cliente `pg` y un pool de conexiones con manejo robusto de errores y reintentos. [attached_file:2]  
+- Autenticación basada en JWT con middlewares `authenticateToken` y `requireRole` para proteger rutas y filtrar por rol (empresa o candidato). [attached_file:2]  
+- Módulos separados por recurso: `auth`, `empresas`, `candidatos`, `cargos`, `cvs`, `entrevistas`, `preguntas`, `respuestas`, `puntajes`, `historial` y `notificaciones`, además de `postulaciones` para el flujo de envío de CV. [attached_file:2]  
+- Manejo centralizado de errores que clasifica códigos típicos de PostgreSQL (timeouts, tabla/columna inexistente, violaciones de clave foránea o única, etc.). [attached_file:2]
 
-```
-├── src/
-│   └── index.js          # Archivo principal del servidor
-├── routes/               # Rutas de la API
-├── middleware/           # Middleware personalizado
-├── controllers/          # Controladores
-├── .env                  # Variables de entorno
-├── .gitignore           # Archivos a ignorar en Git
-├── package.json         # Dependencias y scripts
-└── README.md           # Este archivo
-```
+---
 
-## 🛠️ Instalación
+## 2. Estructura del proyecto
 
-1. Instalar dependencias:
-```bash
+- Carpeta `src/` con el servidor Express, routers, middleware de autenticación, controladores y el módulo de conexión a la base de datos. [attached_file:2][image:1]  
+- Script SQL en `sql/` para crear las tablas de negocio: `empresas`, `candidatos`, `cvs`, `cargos`, `entrevistas`, `preguntas`, `respuestas`, `puntajes`, `historial_aplicaciones` y `notificaciones`, conectadas mediante claves foráneas para mantener la trazabilidad completa del proceso de reclutamiento. [attached_file:2]  
+- Archivos de infraestructura como `Dockerfile`, `docker-compose.yml`, `.env` de ejemplo y colecciones de Postman para probar rápidamente los endpoints del backend. [attached_file:2][image:1]
+
+---
+
+## 3. Configuración previa
+
+1. Crear la base de datos en Supabase y ejecutar el script de creación de tablas incluido en la carpeta `sql/`. [attached_file:2]  
+2. En la carpeta `Backend`, crear un archivo `.env` con variables similares a las siguientes (ajusta los nombres según tu entorno real): [attached_file:2]  
+
+3. Si `JWT_SECRET` o `DATABASE_URL` no están definidos, el backend muestra advertencias claras en consola para facilitar el diagnóstico sin detener el servidor en entornos de desarrollo. [attached_file:2]
+
+---
+
+## 4. Cómo ejecutar el backend
+
+### Opción A: entorno local con Node
+
+1. Instalar dependencias:  
+cd Backend
 npm install
-```
-
-2. Configurar variables de entorno:
-```bash
-cp .env.example .env
-# Edita el archivo .env con tus configuraciones
-```
-
-## 🚀 Uso
-
-### Desarrollo
-```bash
+2. Ejecutar en desarrollo (con recarga si está configurado):  
 npm run dev
-```
-
-### Producción
-```bash
+3. Ejecutar en modo producción:  
 npm start
-```
 
-El servidor estará disponible en `http://localhost:3000`
 
-## 📚 Rutas disponibles
+El servidor quedará escuchando en `http://localhost:3000` (o el puerto definido en `PORT`) y la API base estará disponible en `http://localhost:3000/api`. [attached_file:2]
 
-- `GET /` - Ruta de bienvenida
-- `GET /api/test` - Ruta de prueba de la API
+### Opción B: usando Docker / docker-compose
 
-## 🔧 Scripts disponibles
+1. Revisar `Dockerfile` y `docker-compose.yml` para confirmar la configuración de `PORT`, `DATABASE_URL` y resto de variables de entorno. [attached_file:2][image:1]  
+2. Construir y levantar los servicios:  
 
-- `npm start` - Inicia el servidor en modo producción
-- `npm run dev` - Inicia el servidor en modo desarrollo con nodemon
-- `npm test` - Ejecuta las pruebas (pendiente de configurar)
+# docker-compose up --build
 
-## 📝 Variables de entorno
 
-Crea un archivo `.env` en la raíz del proyecto con las siguientes variables:
+Esta opción permite levantar el backend en un contenedor listo para producción, conectándolo a la base de datos de Supabase o a un contenedor PostgreSQL definido en el propio `docker-compose.yml`. [attached_file:2]
 
-```env
-PORT=3000
-# Agrega más variables según necesites
-```
+---
 
-## 🤝 Contribuir
+## 5. Flujos principales de la API
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+- **Autenticación y perfil**  
+- `POST /api/auth/login-empresa` y `POST /api/auth/login-candidato` validan email y contraseña contra las tablas `empresas` y `candidatos`, soportan contraseñas hasheadas con bcrypt y devuelven un JWT con `id`, `email`, `nombre` y `role`. [attached_file:2]  
+- `GET /api/auth/me` usa el middleware `authenticateToken` para devolver el perfil completo del usuario autenticado con las columnas adecuadas según sea empresa o candidato. [attached_file:2]
 
-## 📄 Licencia
+- **Gestión de entidades de reclutamiento**  
+- Endpoints CRUD organizados por recurso: `/api/empresas`, `/api/candidatos`, `/api/cargos`, `/api/cvs`, `/api/entrevistas`, `/api/preguntas`, `/api/respuestas`, `/api/puntajes`, `/api/historial` y `/api/notificaciones`. [attached_file:2]  
+- Algunas consultas incluyen `JOIN` para enriquecer la respuesta con información de empresa o cargo, con una ruta de fallback a consultas simples si el esquema real no coincide exactamente con el esperado. [attached_file:2]
 
-Este proyecto está bajo la Licencia ISC.
+- **Postulación con CV y n8n**  
+- `POST /api/postulaciones` recibe `cargo_id` y un archivo `cv` (PDF) mediante `multipart/form-data`, valida los datos, sube el archivo a Supabase Storage y obtiene la URL pública del CV. [attached_file:2]  
+- La API llama al webhook configurado en `N8N_WEBHOOK_URL`, que se encarga de descargar el archivo, extraer texto, procesarlo con IA y registrar candidato, CV e historial de aplicación; si el webhook falla, se responde con éxito parcial indicando que el CV fue subido pero la postulación no pudo procesarse automáticamente. [attached_file:2]
+
+Con esta guía, cualquier miembro del equipo puede configurar las variables de entorno, levantar el backend en local o en Docker y comenzar a consumir los endpoints desde Postman o desde el frontend del proyecto. [attached_file:2][image:1]
