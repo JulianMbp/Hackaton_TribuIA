@@ -1,0 +1,1257 @@
+{
+	"info": {
+		"_postman_id": "2d6e6d2a-5c4a-4f86-9850-284bd8aced4d",
+		"name": "Supabase Recruiting - CRUD + Login",
+		"description": "Colección para probar todos los CRUD de las tablas del sistema de reclutamiento más el login con Supabase Auth.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "50442143"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login (Supabase Auth - email/password)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{login_email}}\",\n  \"password\": \"{{login_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{project_url}}/auth/v1/token?grant_type=password",
+							"host": [
+								"{{project_url}}"
+							],
+							"path": [
+								"auth",
+								"v1",
+								"token"
+							],
+							"query": [
+								{
+									"key": "grant_type",
+									"value": "password"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Empresas",
+			"item": [
+				{
+					"name": "Empresas - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/empresas",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"empresas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Empresas - Crear",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Empresa Demo\",\n  \"sector\": \"Tecnología\",\n  \"descripcion\": \"Empresa de prueba\",\n  \"email\": \"empresa.demo@example.com\",\n  \"password\": \"password123\",\n  \"telefono\": \"+57 300 000 0000\",\n  \"pais\": \"Colombia\",\n  \"ciudad\": \"Bogotá\",\n  \"direccion\": \"Calle 123 #45-67\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/empresas",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"empresas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Empresas - Actualizar por ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"descripcion\": \"Empresa demo actualizada\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/empresas?id=eq.{{empresa_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"empresas"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{empresa_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Empresas - Eliminar por ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/empresas?id=eq.{{empresa_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"empresas"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{empresa_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Candidatos",
+			"item": [
+				{
+					"name": "Candidatos - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/candidatos",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"candidatos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Candidatos - Crear",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Candidato Demo\",\n  \"email\": \"candidato.demo@example.com\",\n  \"password\": \"password123\",\n  \"telefono\": \"+57 300 000 0000\",\n  \"pais\": \"Colombia\",\n  \"ciudad\": \"Medellín\",\n  \"experiencia_anios\": 2,\n  \"educacion\": \"Ingeniería de Sistemas\",\n  \"skills\": \"Python, Django\",\n  \"cargo_aplicado\": \"Backend Developer\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/candidatos",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"candidatos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Candidatos - Actualizar por ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"skills\": \"Python, Django, React\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/candidatos?id=eq.{{candidato_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"candidatos"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{candidato_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Candidatos - Eliminar por ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/candidatos?id=eq.{{candidato_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"candidatos"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{candidato_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "CVs",
+			"item": [
+				{
+					"name": "CVs - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/cvs",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"cvs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CVs - Crear",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"candidato_id\": \"{{candidato_id}}\",\n  \"url_archivo\": \"https://mis-cvs.com/cv-demo.pdf\",\n  \"texto_extraido\": \"Resumen del CV...\",\n  \"formato\": \"pdf\",\n  \"peso_archivo\": 123.45\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/cvs",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"cvs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CVs - Actualizar por ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"texto_extraido\": \"Texto actualizado del CV\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/cvs?id=eq.{{cv_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"cvs"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{cv_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CVs - Eliminar por ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/cvs?id=eq.{{cv_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"cvs"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{cv_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cargos",
+			"item": [
+				{
+					"name": "Cargos - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/cargos",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"cargos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cargos - Crear",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"empresa_id\": \"{{empresa_id}}\",\n  \"nombre\": \"Backend Developer Python\",\n  \"descripcion\": \"Puesto backend\",\n  \"salario_min\": 2000,\n  \"salario_max\": 4000,\n  \"modalidad\": \"remoto\",\n  \"skills_requeridos\": \"Python, Django\",\n  \"nivel_experiencia\": \"middle\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/cargos",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"cargos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cargos - Actualizar por ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"estado\": \"cerrado\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/cargos?id=eq.{{cargo_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"cargos"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{cargo_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cargos - Eliminar por ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/cargos?id=eq.{{cargo_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"cargos"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{cargo_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Entrevistas",
+			"item": [
+				{
+					"name": "Entrevistas - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/entrevistas",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"entrevistas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Entrevistas - Crear",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"candidato_id\": \"{{candidato_id}}\",\n  \"cargo_id\": \"{{cargo_id}}\",\n  \"estado\": \"pendiente\",\n  \"metodo\": \"IA\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/entrevistas",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"entrevistas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Entrevistas - Actualizar por ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"estado\": \"finalizada\",\n  \"puntaje_final\": 85.5\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/entrevistas?id=eq.{{entrevista_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"entrevistas"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{entrevista_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Entrevistas - Eliminar por ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/entrevistas?id=eq.{{entrevista_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"entrevistas"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{entrevista_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Preguntas",
+			"item": [
+				{
+					"name": "Preguntas - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/preguntas",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"preguntas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Preguntas - Crear",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entrevista_id\": \"{{entrevista_id}}\",\n  \"tipo\": \"técnica\",\n  \"contenido\": \"Cuéntame sobre tu experiencia con Python\",\n  \"generada_por\": \"manual\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/preguntas",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"preguntas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Preguntas - Actualizar por ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo\": \"comportamental\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/preguntas?id=eq.{{pregunta_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"preguntas"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{pregunta_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Preguntas - Eliminar por ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/preguntas?id=eq.{{pregunta_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"preguntas"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{pregunta_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Respuestas",
+			"item": [
+				{
+					"name": "Respuestas - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/respuestas",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"respuestas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Respuestas - Crear",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pregunta_id\": \"{{pregunta_id}}\",\n  \"contenido\": \"Tengo 3 años de experiencia con Python\",\n  \"tipo\": \"texto\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/respuestas",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"respuestas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Respuestas - Actualizar por ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contenido\": \"Respuesta actualizada\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/respuestas?id=eq.{{respuesta_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"respuestas"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{respuesta_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Respuestas - Eliminar por ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/respuestas?id=eq.{{respuesta_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"respuestas"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{respuesta_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Puntajes",
+			"item": [
+				{
+					"name": "Puntajes - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/puntajes",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"puntajes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Puntajes - Crear",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entrevista_id\": \"{{entrevista_id}}\",\n  \"criterio\": \"Comunicación\",\n  \"valor\": 90.5\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/puntajes",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"puntajes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Puntajes - Actualizar por ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"valor\": 95.0\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/puntajes?id=eq.{{puntaje_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"puntajes"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{puntaje_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Puntajes - Eliminar por ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/puntajes?id=eq.{{puntaje_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"puntajes"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{puntaje_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Historial Aplicaciones",
+			"item": [
+				{
+					"name": "Historial - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/historial_aplicaciones",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"historial_aplicaciones"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Historial - Crear",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"candidato_id\": \"{{candidato_id}}\",\n  \"cargo_id\": \"{{cargo_id}}\",\n  \"estado\": \"aplicado\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/historial_aplicaciones",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"historial_aplicaciones"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Historial - Actualizar por ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"estado\": \"contratado\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/historial_aplicaciones?id=eq.{{historial_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"historial_aplicaciones"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{historial_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Historial - Eliminar por ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/historial_aplicaciones?id=eq.{{historial_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"historial_aplicaciones"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{historial_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notificaciones",
+			"item": [
+				{
+					"name": "Notificaciones - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/notificaciones",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"notificaciones"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Notificaciones - Crear",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"usuario_id\": \"{{candidato_id}}\",\n  \"tipo_usuario\": \"candidato\",\n  \"mensaje\": \"Tienes una nueva entrevista asignada\"\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/notificaciones",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"notificaciones"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Notificaciones - Marcar como leída por ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Prefer",
+								"value": "return=representation"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"leido\": true\n}"
+						},
+						"url": {
+							"raw": "{{rest_url}}/notificaciones?id=eq.{{notificacion_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"notificaciones"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{notificacion_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Notificaciones - Eliminar por ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{rest_url}}/notificaciones?id=eq.{{notificacion_id}}",
+							"host": [
+								"{{rest_url}}"
+							],
+							"path": [
+								"notificaciones"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "eq.{{notificacion_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{
+				"key": "value",
+				"value": "{{anon_key}}",
+				"type": "string"
+			},
+			{
+				"key": "key",
+				"value": "apikey",
+				"type": "string"
+			},
+			{
+				"key": "in",
+				"value": "header",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "project_url",
+			"value": "https://ctvbtlmxdmryckxnhjug.supabase.co",
+			"type": "string"
+		},
+		{
+			"key": "rest_url",
+			"value": "{{project_url}}/rest/v1",
+			"type": "string"
+		},
+		{
+			"key": "anon_key",
+			"value": "PON_AQUI_TU_ANON_KEY",
+			"type": "string"
+		},
+		{
+			"key": "empresa_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "candidato_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cv_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cargo_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "entrevista_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "pregunta_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "respuesta_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "puntaje_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "historial_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "notificacion_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "login_email",
+			"value": "tu-correo@ejemplo.com",
+			"type": "string"
+		},
+		{
+			"key": "login_password",
+			"value": "tu-password",
+			"type": "string"
+		}
+	]
+}
