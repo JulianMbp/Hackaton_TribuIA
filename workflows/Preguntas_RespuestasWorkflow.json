@@ -1,0 +1,601 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "filter_candidate",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "151a0732-848f-4589-b1eb-95602dfd7ea5",
+      "name": "Webhook - Filtrar Candidato",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -336,
+        1264
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "df1fee0c-e4f3-4d3a-abe5-c0ae1aa7d5be"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ctvbtlmxdmryckxnhjug.supabase.co/rest/v1/preguntas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "e900866b-bdc3-462e-9bfc-d4b582cfb045",
+      "name": "HTTP Request - Guardar Preguntas",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        688,
+        1168
+      ],
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ctvbtlmxdmryckxnhjug.supabase.co/rest/v1/notificaciones",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ candidato_id: JSON.parse($('Webhook - Filtrar Candidato').first().json.body).candidate.id, tipo: \"entrevista_creada\", mensaje: \"Se ha creado una nueva entrevista para ti\", leido: false }) }}",
+        "options": {}
+      },
+      "id": "d22ca5e7-34a2-49af-a479-7e052dfa6e66",
+      "name": "HTTP Request - Notificar Candidato Plataforma",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        464,
+        1360
+      ],
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "f7212676-9a7d-4214-b794-22e4a91440b6",
+      "name": "Respond - Filtro Completado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        912,
+        1168
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "supabase_url",
+              "value": "https://ctvbtlmxdmryckxnhjug.supabase.co",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "supabase_anon_key",
+              "value": "<SUPABASE_ANON_KEY>",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "openai_api_key",
+              "value": "<OPENAI_API_KEY>",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "candidate",
+              "value": "={{ $json.body.candidate }}",
+              "type": "object"
+            },
+            {
+              "id": "id-5",
+              "name": "job",
+              "value": "={{ $json.body.job }}",
+              "type": "object"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "bbdcc9e8-9d39-405e-9c4b-3a9a0d985b99",
+      "name": "Set - Inyectar ConfiguraciÃ³n Filtro",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -112,
+            {
+              "id": "id-2",
+              "name": "supabase_anon_key",
+              "value": "<SUPABASE_ANON_KEY>",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "openai_api_key",
+              "value": "<OPENAI_API_KEY>",
+              "type": "string"
+            },
+          "values": [
+            {
+              "content": "=Candidato:\nNombre: {{ $json.candidate.name }}\nSkills: {{ $json.candidate.skills.join(\", \") }}\nExperiencia: {{ JSON.stringify($json.candidate.experience) }}\nEducación: {{ JSON.stringify($json.candidate.education) }}\nProyectos: {{ JSON.stringify($json.candidate.projects) }}\n\nPuesto:\nTítulo: {{ $json.job.title }}\nSkills requeridas: {{ $json.job.required_skills.join(\", \") }}\nDescripción: {{ $json.job.description }}\n\nTarea:\n1. Analiza si el candidato usó IA para generar su CV\n2. Genera exactamente 2 preguntas abiertas usando las SKILLS REALES del candidato ({{ $json.candidate.skills.join(\", \") }}) y las requeridas por el puesto ({{ $json.job.required_skills.join(\", \") }})\n3. Calcula un score de 0-100 basado en: experiencia (40%), habilidades técnicas (30%), validación pública (20%)\n\nDevuelve un JSON con formato: {\"ai_detected\": boolean, \"ai_confidence\": número 0-100, \"score\": número 0-100, \"questions\": [{\"tipo\": \"abierta\", \"contenido\": \"pregunta con skill real\"}]}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "instructions": "Eres un experto en reclutamiento técnico y detección de contenido generado por IA.\n\nIMPORTANTE: Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto adicional antes o después.\n\n1. DETECCIÓN DE IA: Analiza el CV del candidato buscando:\n   - Lenguaje excesivamente formal o genérico\n   - Falta de métricas o logros específicos\n   - Descripciones vagas sin detalles técnicos concretos\n   - Patrones repetitivos en la redacción\n   - Ausencia de desafíos o problemas específicos resueltos\n\n2. GENERACIÓN DE PREGUNTAS: Crea 2 preguntas abiertas que:\n   - DEBEN usar las skills REALES del candidato (NO uses placeholders como [tecnología mencionada])\n   - Sean específicas al puesto y tecnologías mencionadas en el CV\n   - Requieran respuestas detalladas con ejemplos concretos\n   - Ayuden a validar la experiencia real vs contenido generado\n   - Exploren situaciones prácticas y decisiones técnicas\n   - Ejemplo correcto: \"¿Puedes describir un proyecto donde hayas usado React y Node.js para resolver un problema de rendimiento?\"\n   - Ejemplo INCORRECTO: \"¿Puedes describir un proyecto donde hayas usado [tecnología mencionada]?\"\n\n3. SCORING: Calcula un puntaje considerando:\n   - Experiencia relevante (40 puntos)\n   - Habilidades técnicas alineadas (30 puntos)\n   - Validación pública/contribuciones (20 puntos)\n   - Penalización por uso de IA (resta 10 puntos si se detecta)\n   - Bonus por presencia técnica verificable (hasta 10 puntos)\n\nRespuesta esperada (SOLO JSON, sin explicaciones):\n{\"ai_detected\": boolean, \"ai_confidence\": número, \"score\": número, \"questions\": [{\"tipo\": \"abierta\", \"contenido\": \"pregunta\"}]}"
+        }
+      },
+      "id": "abaf80f4-e412-4c69-a6bd-ac61a6beb90a",
+      "name": "OpenAI - Puntuar y Generar Preguntas",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        112,
+        1264
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kFeis9nsmOxpEjhv",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse webhook body if it's a string\nconst webhookBody = $('Webhook - Filtrar Candidato').first().json.body;\nconst webhookData = typeof webhookBody === 'string' ? JSON.parse(webhookBody) : webhookBody;\n\nconst openaiResp = $('OpenAI - Puntuar y Generar Preguntas').first().json.output?.[0]?.content?.[0]?.text;\n\n// Clean markdown code blocks and extra text from OpenAI response\nlet cleanedResp = openaiResp || '';\n\n// Remove markdown code blocks\ncleanedResp = cleanedResp.replace(/```json\\s*/g, '').replace(/```\\s*/g, '');\n\n// Try to extract JSON from the response if it contains extra text\nconst jsonMatch = cleanedResp.match(/\\{[\\s\\S]*\\}/);\nif (jsonMatch) {\n  cleanedResp = jsonMatch[0];\n}\n\ncleanedResp = cleanedResp.trim();\n\n// Parse AI response\nlet aiData;\ntry {\n  aiData = cleanedResp ? JSON.parse(cleanedResp) : {};\n} catch (error) {\n  throw new Error('Failed to parse OpenAI response as JSON. Response: ' + cleanedResp.substring(0, 200));\n}\n\nconst questions = aiData.questions || [];\n\n// Return questions without entrevista_id (will be added by frontend)\nreturn questions.map((q, index) => ({\n  tipo: q.tipo || 'abierta',\n  contenido: q.contenido || q.question || '',\n  generada_por: 'ia'\n}));"
+      },
+      "id": "fe19ceaa-7572-455c-b7e3-88ca00366795",
+      "name": "Código - Procesar Preguntas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "evaluate_answers",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e1a38620-d76e-4343-9daa-756a54eae6b5",
+      "name": "Webhook - Recibir Respuestas",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -336,
+        1680
+      ],
+      "webhookId": "4f61905e-645e-4804-b76d-4cfb8987b778"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "supabase_url",
+              "value": "https://ctvbtlmxdmryckxnhjug.supabase.co",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "supabase_anon_key",
+              "value": "<SUPABASE_ANON_KEY>",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "openai_api_key",
+              "value": "<OPENAI_API_KEY>",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "9b72f44b-daeb-454b-badb-4fc80edcae61",
+      "name": "Set - Configuración Evaluación",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -112,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Preguntas y Respuestas del Candidato:\n{{ JSON.stringify($json.respuestas) }}\n\nEvalúa cada respuesta considerando:\n1. Naturalidad: ¿La respuesta suena humana y auténtica? (0-100)\n2. Coherencia: ¿La respuesta es lógica y bien estructurada? (0-100)\n3. Detección de IA: ¿Hay indicios de que usó IA para responder? (0-100, donde 100 = definitivamente IA)\n\nDevuelve un JSON con formato: {\"evaluaciones\": [{\"pregunta_id\": \"uuid\", \"naturalidad\": número, \"coherencia\": número, \"ai_detected\": boolean, \"ai_confidence\": número}], \"puntaje_promedio\": número}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "instructions": "Eres un experto evaluador de entrevistas técnicas especializado en detectar respuestas generadas por IA.\n\nCRITERIOS DE EVALUACIÓN:\n\n1. NATURALIDAD (0-100):\n   - Lenguaje conversacional vs formal excesivo\n   - Uso de ejemplos personales específicos\n   - Errores humanos naturales (pausas, reformulaciones)\n   - Expresiones coloquiales apropiadas\n   - Detalles únicos y memorables\n\n2. COHERENCIA (0-100):\n   - Estructura lógica de la respuesta\n   - Conexión entre ideas\n   - Relevancia al tema preguntado\n   - Profundidad técnica apropiada\n   - Conclusiones bien fundamentadas\n\n3. DETECCIÓN DE IA (0-100):\n   - Lenguaje genérico o plantillas\n   - Respuestas perfectamente estructuradas sin errores\n   - Falta de detalles específicos o anécdotas personales\n   - Uso de frases típicas de IA\n   - Respuestas demasiado completas o exhaustivas\n\nPENALIZACIONES:\n- Respuestas muy cortas o vagas: -20 puntos\n- Detección alta de IA (>70): -30 puntos\n- Falta de ejemplos concretos: -15 puntos\n\nSiempre devuelve respuestas en formato JSON válido."
+        }
+      },
+      "id": "6657d383-8767-4b47-b609-3044cd1ee820",
+      "name": "OpenAI - Evaluar Respuestas",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        112,
+        1680
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kFeis9nsmOxpEjhv",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookData = $('Webhook - Recibir Respuestas').first().json.body ? JSON.parse($('Webhook - Recibir Respuestas').first().json.body) : $('Webhook - Recibir Respuestas').first().json;\nconst openaiResp = $('OpenAI - Evaluar Respuestas').first().json.output?.[0]?.content?.[0]?.text;\n\n// Clean markdown code blocks from OpenAI response\nlet cleanedResp = openaiResp || '';\nif (cleanedResp.includes('```json')) {\n  cleanedResp = cleanedResp.replace(/```json\\s*/g, '').replace(/```\\s*/g, '');\n}\n\n// Improved JSON extraction with better error handling\nlet aiEvaluation = {};\n\ntry {\n  // First attempt: Try to extract JSON between curly braces using a more robust regex\n  const jsonMatch = cleanedResp.match(/\\{[\\s\\S]*\\}/g);\n  \n  if (jsonMatch && jsonMatch.length > 0) {\n    // Try to parse the first (or largest) JSON object found\n    let parsed = false;\n    for (const match of jsonMatch) {\n      try {\n        aiEvaluation = JSON.parse(match.trim());\n        parsed = true;\n        break;\n      } catch (e) {\n        // Continue to next match\n        continue;\n      }\n    }\n    \n    // If no match was successfully parsed, try parsing the entire cleaned response\n    if (!parsed) {\n      aiEvaluation = JSON.parse(cleanedResp.trim());\n    }\n  } else {\n    // No JSON pattern found, try parsing the entire response\n    aiEvaluation = JSON.parse(cleanedResp.trim());\n  }\n} catch (error) {\n  // If all parsing attempts fail, use safe default values\n  console.log('Failed to parse OpenAI response, using default values. Error:', error.message);\n  console.log('OpenAI response was:', openaiResp?.substring(0, 200));\n  \n  aiEvaluation = {\n    evaluaciones: [],\n    naturalidad: 0,\n    coherencia: 0,\n    ai_detected: false,\n    ai_confidence: 0,\n    puntaje_promedio: 0\n  };\n}\n\nconst entrevistaId = webhookData.entrevista_id;\nconst respuestas = webhookData.respuestas || [];\n\n// Procesar respuestas para guardar en la tabla respuestas\nconst respuestasParaGuardar = respuestas.map((resp, index) => ({\n  pregunta_id: resp.pregunta_id,\n  contenido: resp.contenido || resp.respuesta || '',\n  tipo: resp.tipo || 'texto'\n}));\n\n// Calcular puntaje final\nconst evaluaciones = aiEvaluation.evaluaciones || [];\nconst naturalidad = aiEvaluation.naturalidad || 0;\nconst coherencia = aiEvaluation.coherencia || 0;\nconst aiDetected = aiEvaluation.ai_detected || false;\nconst aiConfidence = aiEvaluation.ai_confidence || 0;\nconst puntajePromedio = aiEvaluation.puntaje_promedio || 0;\n\nlet puntajeFinal = puntajePromedio || ((naturalidad * 0.4) + (coherencia * 0.6));\n\n// Aplicar penalizaciones\nif (aiDetected && aiConfidence > 70) {\n  puntajeFinal -= 30;\n}\n\nif (respuestas.some(r => (r.contenido || r.respuesta || '').length < 50)) {\n  puntajeFinal -= 20;\n}\n\nif (!respuestas.some(r => (r.contenido || r.respuesta || '').includes('ejemplo') || (r.contenido || r.respuesta || '').includes('experiencia'))) {\n  puntajeFinal -= 15;\n}\n\npuntajeFinal = Math.max(0, Math.min(100, puntajeFinal));\n\n// Preparar puntajes para guardar - solo si existen evaluaciones\nconst puntajes = [];\n\nif (evaluaciones && evaluaciones.length > 0) {\n  // Calcular promedios de naturalidad y coherencia de todas las evaluaciones\n  let totalNaturalidad = 0;\n  let totalCoherencia = 0;\n  let count = 0;\n  \n  evaluaciones.forEach(eval => {\n    totalNaturalidad += eval.naturalidad || 0;\n    totalCoherencia += eval.coherencia || 0;\n    count++;\n  });\n  \n  const promedioNaturalidad = count > 0 ? Math.round(totalNaturalidad / count) : 0;\n  const promedioCoherencia = count > 0 ? Math.round(totalCoherencia / count) : 0;\n  \n  // Crear entradas de puntajes sin pregunta_id\n  puntajes.push({\n    entrevista_id: entrevistaId,\n    criterio: 'naturalidad',\n    valor: promedioNaturalidad\n  });\n  \n  puntajes.push({\n    entrevista_id: entrevistaId,\n    criterio: 'coherencia',\n    valor: promedioCoherencia\n  });\n  \n  puntajes.push({\n    entrevista_id: entrevistaId,\n    criterio: 'deteccion_ia',\n    valor: Math.round(aiConfidence)\n  });\n}\n\nreturn {\n  entrevista_id: entrevistaId,\n  respuestas: respuestasParaGuardar,\n  puntajes: puntajes,\n  puntaje_final: Math.round(puntajeFinal),\n  ai_detected: aiDetected,\n  ai_confidence: aiConfidence\n};"
+      },
+      "id": "ea290d8b-a435-4faf-8ca3-3fb2d7269acb",
+      "name": "Código - Procesar Evaluación",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Set - Configuración Evaluación').first().json.supabase_url }}/rest/v1/respuestas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.respuestas }}",
+        "options": {}
+      },
+      "id": "d0cc6bbd-bb81-4323-aad5-54b5779eb29d",
+      "name": "HTTP Request - Guardar Respuestas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        688,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Set - Configuración Evaluación').first().json.supabase_url }}/rest/v1/puntajes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Código - Procesar Evaluación').first().json.puntajes }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "38c8f02b-f984-4592-989d-d14e12fbb4de",
+      "name": "HTTP Request - Guardar Puntajes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        688,
+        1776
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $('Set - Configuración Evaluación').first().json.supabase_url }}/rest/v1/entrevistas?id=eq.{{ $('Código - Procesar Evaluación').first().json.entrevista_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"estado\": \"finalizada\", \"puntaje_final\": $('Código - Procesar Evaluación').first().json.puntaje_final, \"finished_at\": new Date().toISOString() } }}",
+        "options": {}
+      },
+      "id": "b1923c0f-c569-47e7-9377-907442da5316",
+      "name": "HTTP Request - Actualizar Entrevista",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        912,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3a1b3755-509c-419a-90c4-ff85fbfd151b",
+      "name": "Respond - Evaluación Completada",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1136,
+        1680
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Filtrar Candidato": {
+      "main": [
+        [
+          {
+            "node": "Set - Inyectar ConfiguraciÃ³n Filtro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Guardar Preguntas": {
+      "main": [
+        [
+          {
+            "node": "Respond - Filtro Completado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Inyectar ConfiguraciÃ³n Filtro": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Puntuar y Generar Preguntas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Puntuar y Generar Preguntas": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Notificar Candidato Plataforma",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Código - Procesar Preguntas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Código - Procesar Preguntas": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Guardar Preguntas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Recibir Respuestas": {
+      "main": [
+        [
+          {
+            "node": "Set - Configuración Evaluación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Configuración Evaluación": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Evaluar Respuestas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Evaluar Respuestas": {
+      "main": [
+        [
+          {
+            "node": "Código - Procesar Evaluación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Código - Procesar Evaluación": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Guardar Respuestas",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request - Guardar Puntajes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Guardar Respuestas": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Actualizar Entrevista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Guardar Puntajes": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Actualizar Entrevista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Actualizar Entrevista": {
+      "main": [
+        [
+          {
+            "node": "Respond - Evaluación Completada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "65e02e27-a223-4b7e-b8f1-4af81bd4b7dc",
+  "meta": {
+    "instanceId": "3be2dcb6cca95d91004168b6b5e79f89336ac58ca98eb7194a78f2605a6fea7c"
+  },
+  "id": "kVjInqxGcXmC4jyy",
+  "tags": []
+}

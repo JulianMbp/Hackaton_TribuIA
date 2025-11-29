@@ -44,6 +44,23 @@ curl -X POST "http://localhost:5678/webhook/candidate_intake" -H "Content-Type: 
 **Archivos añadidos**
 - `workflows/RecibirCandidatoWorkflow.postman_collection.json` — colección Postman para probar el webhook.
 
+**Colección Postman adicional (Preguntas / Respuestas)**
+
+- **Archivo:** `workflows/Preguntas_RespuestasWorkflow.postman_collection.json`
+- **Descripción:** colección con dos peticiones para probar los webhooks del workflow `Preguntas_RespuestasWorkflow.json`:
+  - `Filter Candidate` -> POST `{{base_url}}/webhook/filter_candidate` — cuerpo de ejemplo con `candidate` y `job`.
+  - `Evaluate Answers` -> POST `{{base_url}}/webhook/evaluate_answers` — cuerpo de ejemplo con `entrevista_id` y `respuestas`.
+
+**Cómo usar la colección**
+1. Importa `workflows/Preguntas_RespuestasWorkflow.postman_collection.json` en Postman.
+2. Ajusta la variable `base_url` de la colección (por defecto `http://localhost:5678`).
+3. Asegúrate de tener importado y configurado `workflows/Preguntas_RespuestasWorkflow.json` en n8n y de haber establecido las credenciales necesarias (OpenAI, Supabase).
+4. Ejecuta `Filter Candidate` para que el workflow genere preguntas, y luego usa `Evaluate Answers` para enviar respuestas de ejemplo y comprobar la lógica de evaluación.
+
+Ejemplos de cuerpos ya incluidos en la colección. Si quieres que haga pruebas automáticas (collection runner) o añada variables de entorno para Supabase/OpenAI en la colección, dime y lo preparo.
+
 Si quieres, puedo:
 - Generar un `env.example` y un `README` más detallado con Docker compose para n8n, o
 - Limpiar el historial (BFG/git filter-repo) si prefieres remover los secretos de commits anteriores.
+
+Dime cuál prefieres y lo hago o te doy los pasos detallados.
