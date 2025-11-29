@@ -344,23 +344,23 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0dmJ0bG14ZG1yeWNreG5oanVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNDM1MTEsImV4cCI6MjA3OTkxOTUxMX0.r2ONi-ZQKn_GqQmosje0bjL1js78vQ93xQQqJ98Kf6c"
+              "value": "<SUPABASE_ANON_KEY>"
             },
             {
               "name": "Authorization",
-              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0dmJ0bG14ZG1yeWNreG5oanVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNDM1MTEsImV4cCI6MjA3OTkxOTUxMX0.r2ONi-ZQKn_GqQmosje0bjL1js78vQ93xQQqJ98Kf6c"
+              "value": "Bearer <SUPABASE_ANON_KEY>"
             },
             {
               "name": "Content-Type",
               "value": "application/json"
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_ANON_KEY>"
             },
             {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
-          ]
-        },
-        "sendBody": true,
+              "name": "Authorization",
+              "value": "Bearer <SUPABASE_ANON_KEY>"
+            },
         "bodyParameters": {
           "parameters": [
             {
@@ -425,18 +425,18 @@
       "typeVersion": 4.3,
       "position": [
         23036,
-        1168
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const candidateId = $('HTTP Request - Guardar Candidato').first().json.id;\nconst jobId = 'bcacb59e-2c7f-4f1b-a6dd-470bfd861134';\nif(!jobId) { \n  return [{ json: { created: false, reason: 'no_cargo_id', candidate_id: candidateId } }]; \n}\nreturn [{ json: { candidato_id: candidateId, cargo_id: jobId, estado: 'aplicado' } }];"
-      },
-      "id": "30a23e08-5225-4e4c-bba0-db1f44b72e44",
-      "name": "Code - Vincular Cargo-Candidato",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
+            {
+              "id": "id-3",
+              "name": "supabase_anon_key",
+              "value": "<SUPABASE_ANON_KEY>",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "openai_api_key",
+              "value": "<OPENAI_API_KEY>",
+              "type": "string"
+            },
         23484,
         1168
       ]
