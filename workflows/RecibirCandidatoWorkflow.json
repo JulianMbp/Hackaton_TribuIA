@@ -1,0 +1,691 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "candidate_intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c539e0e2-6d51-4217-b063-dbaf0e3c2650",
+      "name": "Webhook - Recibir Candidato",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        21024,
+        1168
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "24b01381-d8fa-41ef-8f75-6eed7a8eccae"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.cv_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "3616efbd-f91f-46ef-a1a7-d0676765e909",
+      "name": "HTTP Request - Descargar CV",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        21472,
+        1168
+      ],
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "REDACTED_SERPER_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"q\": \"{{ $json.output.nombre }} {{ $json.output.cargo_aplicado }} LinkedIn GitHub portfolio\" }",
+        "options": {}
+      },
+      "id": "3f6979fa-28bb-4204-886a-22246baa5ed8",
+      "name": "Serper - Enriquecer Perfil",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        22364,
+        1240
+      ],
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ctvbtlmxdmryckxnhjug.supabase.co/rest/v1/cvs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "candidato_id",
+              "value": "={{ $('HTTP Request - Guardar Candidato').item.json[0].id }}"
+            },
+            {
+              "name": "url_archivo",
+              "value": "={{ $('HTTP Request - Descargar CV').first().json.cv_url }}"
+            },
+            {
+              "name": "texto_extraido",
+              "value": "={{ $('Extract From File - Extraer Texto CV').item.json.text }}"
+            },
+            {
+              "name": "formato",
+              "value": "pdf"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d70dc3ee-6e96-46e9-86a5-cf4d6483874a",
+      "name": "HTTP Request - Guardar CV",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        23260,
+        1168
+      ],
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ctvbtlmxdmryckxnhjug.supabase.co/rest/v1/historial_aplicaciones",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"candidato_id\": \"{{ $json.candidato_id }}\", \"cargo_id\": \"{{ $json.cargo_id }}\", \"estado\": \"{{ $json.estado }}\" }",
+        "options": {}
+      },
+      "id": "56f3124d-03e1-47d7-9649-c7122cd9e6d4",
+      "name": "HTTP Request - Guardar VinculaciÃ³n",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        23708,
+        1168
+      ],
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3a8e03b0-0b56-4687-8f05-e8ac20db383d",
+      "name": "Respond - Candidato Registrado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        23932,
+        1168
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "cargo_id",
+              "value": "bcacb59e-2c7f-4f1b-a6dd-470bfd861134",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "supabase_url",
+              "value": "https://ctvbtlmxdmryckxnhjug.supabase.co",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "supabase_anon_key",
+              "value": "<SUPABASE_ANON_KEY>",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "openai_api_key",
+              "value": "<OPENAI_API_KEY>",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "cv_url",
+              "value": "={{ JSON.parse($json.body).cv_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "9a2aba6a-1570-47b1-9f78-dcb4bbbe4e34",
+      "name": "Set - Inyectar ConfiguraciÃ³n Candidato",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        21248,
+        1168
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "b9ad3845-b145-4e60-9e6d-4efc2efb4cad",
+      "name": "Extract From File - Extraer Texto CV",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        21696,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "nombre",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "email",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.email }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "password",
+              "value": "={{ 'temp_' + Date.now().toString() }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "telefono",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.telefono }}",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "pais",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.pais }}",
+              "type": "string"
+            },
+            {
+              "id": "id-6",
+              "name": "ciudad",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.ciudad }}",
+              "type": "string"
+            },
+            {
+              "id": "id-7",
+              "name": "experiencia_anios",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.experiencia_anios }}",
+              "type": "number"
+            },
+            {
+              "id": "id-8",
+              "name": "educacion",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.educacion }}",
+              "type": "string"
+            },
+            {
+              "id": "id-9",
+              "name": "skills",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.skills }}",
+              "type": "string"
+            },
+            {
+              "id": "id-10",
+              "name": "cargo_aplicado",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.cargo_aplicado }}",
+              "type": "string"
+            },
+            {
+              "id": "id-11",
+              "name": "portafolio_url",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.portafolio_url }}",
+              "type": "string"
+            },
+            {
+              "id": "id-12",
+              "name": "github_url",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.github_url }}",
+              "type": "string"
+            },
+            {
+              "id": "id-13",
+              "name": "descripcion",
+              "value": "={{ $('AI Agent - Extraer Info Candidato').first().json.output.descripcion }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2ad0821f-0bb1-4a02-9fcf-15f5f3b77fcb",
+      "name": "Set - Preparar Datos Candidato",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        22812,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ctvbtlmxdmryckxnhjug.supabase.co/rest/v1/candidatos",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0dmJ0bG14ZG1yeWNreG5oanVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNDM1MTEsImV4cCI6MjA3OTkxOTUxMX0.r2ONi-ZQKn_GqQmosje0bjL1js78vQ93xQQqJ98Kf6c"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0dmJ0bG14ZG1yeWNreG5oanVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNDM1MTEsImV4cCI6MjA3OTkxOTUxMX0.r2ONi-ZQKn_GqQmosje0bjL1js78vQ93xQQqJ98Kf6c"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "nombre",
+              "value": "={{ $json.nombre }}"
+            },
+            {
+              "name": "email",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "name": "password",
+              "value": "={{ $json.password }}"
+            },
+            {
+              "name": "telefono",
+              "value": "={{ $json.telefono }}"
+            },
+            {
+              "name": "pais",
+              "value": "={{ $json.pais }}"
+            },
+            {
+              "name": "ciudad",
+              "value": "={{ $json.ciudad }}"
+            },
+            {
+              "name": "experiencia_anios",
+              "value": "={{ $json.experiencia_anios }}"
+            },
+            {
+              "name": "educacion",
+              "value": "={{ $json.educacion }}"
+            },
+            {
+              "name": "skills",
+              "value": "={{ $json.skills }}"
+            },
+            {
+              "name": "cargo_aplicado",
+              "value": "={{ $json.cargo_aplicado }}"
+            },
+            {
+              "name": "portafolio_url",
+              "value": "={{ $json.portafolio_url }}"
+            },
+            {
+              "name": "github_url",
+              "value": "={{ $json.github_url }}"
+            },
+            {
+              "name": "descripcion",
+              "value": "={{ $json.descripcion }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "311b4d65-1da6-4718-a1ce-a0406fc02369",
+      "name": "HTTP Request - Guardar Candidato",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        23036,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const candidateId = $('HTTP Request - Guardar Candidato').first().json.id;\nconst jobId = 'bcacb59e-2c7f-4f1b-a6dd-470bfd861134';\nif(!jobId) { \n  return [{ json: { created: false, reason: 'no_cargo_id', candidate_id: candidateId } }]; \n}\nreturn [{ json: { candidato_id: candidateId, cargo_id: jobId, estado: 'aplicado' } }];"
+      },
+      "id": "30a23e08-5225-4e4c-bba0-db1f44b72e44",
+      "name": "Code - Vincular Cargo-Candidato",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        23484,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Eres un asistente experto en análisis de CVs. Tu tarea es extraer información estructurada del texto del CV proporcionado.\n\nExtrae la siguiente información:\n- nombre: Nombre completo del candidato\n- email: Correo electrónico\n- telefono: Número de teléfono\n- pais: País de residencia\n- ciudad: Ciudad de residencia\n- experiencia_anios: Años totales de experiencia profesional (número)\n- educacion: Nivel educativo más alto alcanzado\n- skills: Habilidades técnicas y profesionales (como texto separado por comas)\n- cargo_aplicado: Cargo o posición a la que aplica\n- portafolio_url: URL del portafolio si está disponible\n- github_url: URL de GitHub si está disponible\n- descripcion: Resumen profesional o descripción del candidato\n\nSi algún campo no está disponible en el CV, devuelve null para ese campo."
+        }
+      },
+      "id": "d7bf7806-ba2c-4f3e-b7ea-ae12c080f77a",
+      "name": "AI Agent - Extraer Info Candidato",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        21920,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "id": "38cee288-a71d-4d03-aba8-36ba29316f83",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        21992,
+        1600
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "qqzsqQ7fr3umdJI3",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"nombre\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre completo del candidato\"\n    },\n    \"email\": {\n      \"type\": \"string\",\n      \"description\": \"Email del candidato\"\n    },\n    \"telefono\": {\n      \"type\": \"string\",\n      \"description\": \"Teléfono del candidato\"\n    },\n    \"pais\": {\n      \"type\": \"string\",\n      \"description\": \"País del candidato\"\n    },\n    \"ciudad\": {\n      \"type\": \"string\",\n      \"description\": \"Ciudad del candidato\"\n    },\n    \"experiencia_anios\": {\n      \"type\": \"number\",\n      \"description\": \"Años de experiencia\"\n    },\n    \"educacion\": {\n      \"type\": \"string\",\n      \"description\": \"Nivel educativo\"\n    },\n    \"skills\": {\n      \"type\": \"string\",\n      \"description\": \"Habilidades separadas por comas\"\n    },\n    \"cargo_aplicado\": {\n      \"type\": \"string\",\n      \"description\": \"Cargo al que aplica\"\n    },\n    \"portafolio_url\": {\n      \"type\": \"string\",\n      \"description\": \"URL del portafolio\"\n    },\n    \"github_url\": {\n      \"type\": \"string\",\n      \"description\": \"URL de GitHub\"\n    },\n    \"descripcion\": {\n      \"type\": \"string\",\n      \"description\": \"Descripción o resumen profesional\"\n    }\n  }\n}",
+        "autoFix": true
+      },
+      "id": "30910c2a-dee0-4146-bd5e-ee05308fc527",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        21996,
+        1392
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a7f23237-8e3c-43a2-9890-d839fe66ad5b",
+      "name": "Merge - Combinar Datos",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        22588,
+        1168
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request - Guardar CV": {
+      "main": [
+        [
+          {
+            "node": "Code - Vincular Cargo-Candidato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Guardar VinculaciÃ³n": {
+      "main": [
+        [
+          {
+            "node": "Respond - Candidato Registrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Inyectar ConfiguraciÃ³n Candidato": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Descargar CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Recibir Candidato": {
+      "main": [
+        [
+          {
+            "node": "Set - Inyectar ConfiguraciÃ³n Candidato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Descargar CV": {
+      "main": [
+        [
+          {
+            "node": "Extract From File - Extraer Texto CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract From File - Extraer Texto CV": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Extraer Info Candidato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Preparar Datos Candidato": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Guardar Candidato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Guardar Candidato": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Guardar CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Vincular Cargo-Candidato": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Guardar VinculaciÃ³n",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Extraer Info Candidato",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent - Extraer Info Candidato",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Extraer Info Candidato": {
+      "main": [
+        [
+          {
+            "node": "Serper - Enriquecer Perfil",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge - Combinar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Serper - Enriquecer Perfil": {
+      "main": [
+        [
+          {
+            "node": "Merge - Combinar Datos",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge - Combinar Datos": {
+      "main": [
+        [
+          {
+            "node": "Set - Preparar Datos Candidato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7343279e-a968-4310-ae89-b38aaaf36bd4",
+  "meta": {
+    "instanceId": "6e08cca1db2c279e285aca6790adbf480778cae061efe8d33f6580bf6d880a15"
+  },
+  "id": "xfDdEiMOtDpaejUB",
+  "tags": []
+}
