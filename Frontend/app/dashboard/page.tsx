@@ -8,13 +8,14 @@ import React, { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/common/Card';
 import { Loading } from '@/components/common/Loading';
-import { candidatoService, entrevistaService } from '@/lib/api/services';
-import { Candidato, Entrevista } from '@/lib/types';
+import { candidatoService, cargoService, entrevistaService } from '@/lib/api/services';
+import { Candidato, Cargo, Entrevista } from '@/lib/types';
 import Link from 'next/link';
 
 export default function DashboardPage() {
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [entrevistas, setEntrevistas] = useState<Entrevista[]>([]);
+  const [cargos, setCargos] = useState<Cargo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,9 +24,10 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     setLoading(true);
-    const [candidatosRes, entrevistasRes] = await Promise.all([
+    const [candidatosRes, entrevistasRes, cargosRes] = await Promise.all([
       candidatoService.getAll(),
       entrevistaService.getAll(),
+      cargoService.getAll(),
     ]);
 
     if (candidatosRes.success && candidatosRes.data) {
@@ -34,6 +36,10 @@ export default function DashboardPage() {
 
     if (entrevistasRes.success && entrevistasRes.data) {
       setEntrevistas(entrevistasRes.data);
+    }
+
+    if (cargosRes.success && cargosRes.data) {
+      setCargos(cargosRes.data);
     }
 
     setLoading(false);
@@ -181,7 +187,7 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {candidatos.length === 0 ? (
+          {cargos.length === 0 ? (
             <Card className="bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700">
               <p className="text-center text-neutral-600 dark:text-neutral-400 py-8">
                 No hay vacantes publicadas aún. Crea tu primera vacante para comenzar a recibir postulaciones.
@@ -189,28 +195,23 @@ export default function DashboardPage() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {candidatos.slice(0, 5).map((candidato, index) => (
-                <div key={candidato.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-fade-in-up">
+              {[...cargos]
+                .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+                .slice(0, 5)
+                .map((cargo, index) => (
+                <div key={cargo.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-fade-in-up">
                   <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700 cursor-pointer">
-                    <Link href={`/dashboard/vacantes/${candidato.id}`} className="block">
+                    <Link href="/dashboard/vacantes" className="block">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-neutral-900 dark:text-white">{candidato.nombre}</p>
-                          <p className="text-sm text-neutral-600 dark:text-neutral-400">{candidato.email}</p>
+                          <p className="font-medium text-neutral-900 dark:text-white">{cargo.nombre}</p>
+                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                            {cargo.nivel_experiencia ? cargo.nivel_experiencia.toUpperCase() : 'Sin nivel definido'}
+                          </p>
                         </div>
-                        <div
-                          className={`
-                            px-3 py-1 rounded-full text-xs font-medium
-                            ${candidato.status === 'completed'
-                              ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                              : candidato.status === 'in_interview'
-                              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
-                              : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-600'
-                            }
-                          `}
-                        >
-                          {candidato.status}
-                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          {cargo.estado === 'activo' ? 'Activa' : cargo.estado === 'cerrado' ? 'Cerrada' : 'Pausada'}
+                        </span>
                       </div>
                     </Link>
                   </Card>
