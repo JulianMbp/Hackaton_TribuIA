@@ -7,7 +7,7 @@ export interface Vacante {
   id: string;
   titulo: string;
   empresa: string;
-  modalidad: 'remoto' | 'hibrido' | 'presencial';
+  modalidad: 'remoto' | 'hibrido' | 'presencial' | null;
   ubicacion: string;
   salario: string;
   categoria: string;
@@ -22,10 +22,17 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
   const [busqueda, setBusqueda] = useState('');
   const [filtroModalidad, setFiltroModalidad] = useState<string>('todos');
 
-  const modalidadConfig = {
+  const modalidadConfig: Record<string, { label: string; color: string }> = {
     remoto: { label: 'Remoto', color: 'bg-green-100 text-green-700' },
     hibrido: { label: 'Híbrido', color: 'bg-blue-100 text-blue-700' },
     presencial: { label: 'Presencial', color: 'bg-purple-100 text-purple-700' },
+  };
+
+  const getModalidadConfig = (modalidad: string | null) => {
+    if (!modalidad) {
+      return { label: 'No especificada', color: 'bg-gray-100 text-gray-700' };
+    }
+    return modalidadConfig[modalidad] || { label: 'No especificada', color: 'bg-gray-100 text-gray-700' };
   };
 
   const vacantesFiltradas = vacantes.filter((v) => {
@@ -94,9 +101,9 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
                     <p className="text-sm text-neutral-600 mt-1">{vacante.empresa}</p>
                   </div>
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${modalidadConfig[vacante.modalidad].color}`}
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${getModalidadConfig(vacante.modalidad).color}`}
                   >
-                    {modalidadConfig[vacante.modalidad].label}
+                    {getModalidadConfig(vacante.modalidad).label}
                   </span>
                 </div>
 

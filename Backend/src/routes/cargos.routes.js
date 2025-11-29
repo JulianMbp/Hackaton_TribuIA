@@ -6,10 +6,42 @@ const router = express.Router();
 // Listar cargos
 router.get('/', async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM cargos ORDER BY created_at DESC');
+    // Primero intentamos con JOIN para obtener información de empresa
+    // Usamos COALESCE para manejar columnas que pueden no existir
+    const query = `
+      SELECT 
+        c.id,
+        c.empresa_id,
+        c.nombre,
+        c.descripcion,
+        c.salario_min,
+        c.salario_max,
+        c.modalidad,
+        c.skills_requeridos,
+        c.nivel_experiencia,
+        c.estado,
+        c.created_at,
+        e.nombre as empresa_nombre,
+        e.ciudad as empresa_ciudad,
+        e.pais as empresa_pais
+      FROM cargos c
+      LEFT JOIN empresas e ON c.empresa_id = e.id
+      ORDER BY COALESCE(c.created_at, NOW()) DESC
+    `;
+    const { rows } = await pool.query(query);
     res.json(rows);
   } catch (err) {
-    next(err);
+    console.error('Error en GET /api/cargos:', err);
+    console.error('Stack:', err.stack);
+    // Si falla con JOIN, intentamos sin JOIN
+    try {
+      const simpleQuery = 'SELECT * FROM cargos ORDER BY created_at DESC NULLS LAST';
+      const { rows } = await pool.query(simpleQuery);
+      res.json(rows);
+    } catch (err2) {
+      console.error('Error en query simple:', err2);
+      next(err2);
+    }
   }
 });
 

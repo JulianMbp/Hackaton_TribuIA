@@ -1,227 +1,167 @@
 'use client';
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { UserCircle2, LogOut, Bell, ArrowLeft } from 'lucide-react';
 import { MisPostulaciones, Postulacion } from '@/components/candidato/MisPostulaciones';
-import { PropuestasTrabajo, Vacante } from '@/components/candidato/PropuestasTrabajo';
 import { PerfilCandidato, PerfilData } from '@/components/candidato/PerfilCandidato';
+import { PropuestasTrabajo, Vacante } from '@/components/candidato/PropuestasTrabajo';
+import { Loading } from '@/components/common/Loading';
+import { candidatoService, cargoService, historialService } from '@/lib/api/services';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { ArrowLeft, Bell, LogOut, UserCircle2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function PanelCandidatoPage() {
   const router = useRouter();
+  const { user, logout } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [postulaciones, setPostulaciones] = useState<Postulacion[]>([]);
+  const [vacantes, setVacantes] = useState<Vacante[]>([]);
+  const [perfil, setPerfil] = useState<PerfilData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user || user.role !== 'candidato') {
+      router.push('/');
+      return;
+    }
+
+    loadData();
+  }, [user]);
+
+  const loadData = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Cargar datos en paralelo
+      const [perfilRes, postulacionesRes, vacantesRes] = await Promise.all([
+        candidatoService.getById(user.id),
+        historialService.getByCandidato(user.id),
+        cargoService.getAll(),
+      ]);
+
+      // Procesar perfil
+      if (perfilRes.success && perfilRes.data) {
+        const candidato = perfilRes.data;
+        const skills = candidato.skills
+          ? candidato.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
+          : [];
+        
+        // Calcular completitud del perfil
+        let completitud = 0;
+        if (candidato.nombre) completitud += 15;
+        if (candidato.email) completitud += 10;
+        if (candidato.telefono) completitud += 10;
+        if (candidato.experiencia_anios !== null && candidato.experiencia_anios !== undefined) completitud += 15;
+        if (candidato.educacion) completitud += 10;
+        if (skills.length > 0) completitud += 15;
+        if (candidato.descripcion) completitud += 10;
+        if (candidato.portafolio_url || candidato.github_url) completitud += 15;
+
+        setPerfil({
+          nombre: candidato.nombre,
+          rol: candidato.cargo_aplicado || 'Candidato',
+          experiencia: candidato.experiencia_anios
+            ? `${candidato.experiencia_anios} ${candidato.experiencia_anios === 1 ? 'año' : 'años'} de experiencia`
+            : 'Sin experiencia especificada',
+          skills: skills.length > 0 ? skills : ['Sin habilidades especificadas'],
+          completitud: Math.min(completitud, 100),
+        });
+      }
+
+      // Procesar postulaciones
+      if (postulacionesRes.success && postulacionesRes.data) {
+        const postulacionesData = postulacionesRes.data.map((hist: any) => {
+          // Mapear estados de la BD a los estados del componente
+          let estado: 'pendiente' | 'entrevista' | 'rechazado' | 'aceptado' = 'pendiente';
+          if (hist.estado === 'aplicado') estado = 'pendiente';
+          else if (hist.estado === 'revisado') estado = 'entrevista';
+          else if (hist.estado === 'rechazado') estado = 'rechazado';
+          else if (hist.estado === 'contratado') estado = 'aceptado';
+
+          return {
+            id: hist.id,
+            puesto: hist.cargo_nombre || 'Sin nombre',
+            empresa: hist.empresa_nombre || 'Sin empresa',
+            estado,
+            fecha: hist.fecha || new Date().toISOString(),
+          };
+        });
+        setPostulaciones(postulacionesData);
+      }
+
+      // Procesar vacantes
+      if (vacantesRes.success && vacantesRes.data) {
+        const vacantesData = vacantesRes.data
+          .filter((cargo: any) => cargo.estado === 'activo')
+          .map((cargo: any) => {
+            // Formatear salario
+            let salario = 'No especificado';
+            if (cargo.salario_min && cargo.salario_max) {
+              salario = `$${cargo.salario_min.toLocaleString()}-$${cargo.salario_max.toLocaleString()}`;
+            } else if (cargo.salario_min) {
+              salario = `Desde $${cargo.salario_min.toLocaleString()}`;
+            } else if (cargo.salario_max) {
+              salario = `Hasta $${cargo.salario_max.toLocaleString()}`;
+            }
+
+            // Obtener categoría de skills o nivel de experiencia
+            const categoria = cargo.nivel_experiencia || 'General';
+
+            // Formatear ubicación
+            let ubicacion = 'No especificada';
+            if (cargo.empresa_ciudad && cargo.empresa_pais) {
+              ubicacion = `${cargo.empresa_ciudad}, ${cargo.empresa_pais}`;
+            } else if (cargo.empresa_ciudad) {
+              ubicacion = cargo.empresa_ciudad;
+            } else if (cargo.empresa_pais) {
+              ubicacion = cargo.empresa_pais;
+            }
+
+            // Normalizar modalidad - convertir a minúsculas y validar
+            let modalidad: 'remoto' | 'hibrido' | 'presencial' | null = null;
+            if (cargo.modalidad) {
+              const modalidadLower = cargo.modalidad.toLowerCase();
+              if (modalidadLower === 'remoto' || modalidadLower === 'híbrido' || modalidadLower === 'hibrido') {
+                modalidad = modalidadLower === 'híbrido' ? 'hibrido' : modalidadLower as 'remoto' | 'hibrido';
+              } else if (modalidadLower === 'presencial') {
+                modalidad = 'presencial';
+              }
+            }
+
+            return {
+              id: cargo.id,
+              titulo: cargo.nombre,
+              empresa: cargo.empresa_nombre || 'Empresa',
+              modalidad,
+              ubicacion,
+              salario,
+              categoria,
+              descripcion: cargo.descripcion || 'Sin descripción disponible',
+            };
+          });
+        setVacantes(vacantesData);
+      }
+    } catch (err: any) {
+      console.error('Error cargando datos:', err);
+      setError('Error al cargar los datos. Por favor, intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
+      localStorage.removeItem('token');
     }
+    logout();
     router.push('/');
   };
 
-  // Mock Data - Postulaciones
-  const mockPostulaciones: Postulacion[] = [
-    {
-      id: '1',
-      puesto: 'Frontend Developer',
-      empresa: 'Tech Corp',
-      estado: 'pendiente',
-      fecha: '2025-11-25',
-    },
-    {
-      id: '2',
-      puesto: 'React Developer',
-      empresa: 'StartupXYZ',
-      estado: 'entrevista',
-      fecha: '2025-11-23',
-    },
-    {
-      id: '3',
-      puesto: 'Full Stack Developer',
-      empresa: 'Digital Solutions',
-      estado: 'rechazado',
-      fecha: '2025-11-20',
-    },
-    {
-      id: '4',
-      puesto: 'UI Developer',
-      empresa: 'Creative Agency',
-      estado: 'aceptado',
-      fecha: '2025-11-18',
-    },
-    {
-      id: '5',
-      puesto: 'Next.js Developer',
-      empresa: 'WebStudio',
-      estado: 'pendiente',
-      fecha: '2025-11-27',
-    },
-    {
-      id: '6',
-      puesto: 'TypeScript Developer',
-      empresa: 'CodeFactory',
-      estado: 'entrevista',
-      fecha: '2025-11-26',
-    },
-    {
-      id: '7',
-      puesto: 'JavaScript Developer',
-      empresa: 'DevHub',
-      estado: 'pendiente',
-      fecha: '2025-11-24',
-    },
-    {
-      id: '8',
-      puesto: 'React Native Developer',
-      empresa: 'MobileFirst',
-      estado: 'rechazado',
-      fecha: '2025-11-22',
-    },
-  ];
-
-  // Mock Data - Vacantes
-  const mockVacantes: Vacante[] = [
-    {
-      id: '1',
-      titulo: 'Senior Frontend Developer',
-      empresa: 'Google',
-      modalidad: 'remoto',
-      ubicacion: 'Anywhere',
-      salario: '$80k-$120k',
-      categoria: 'Desarrollo',
-      descripcion:
-        'Buscamos un desarrollador frontend senior con experiencia en React y TypeScript para unirse a nuestro equipo de productos.',
-    },
-    {
-      id: '2',
-      titulo: 'React Native Developer',
-      empresa: 'Meta',
-      modalidad: 'hibrido',
-      ubicacion: 'Menlo Park, CA',
-      salario: '$90k-$130k',
-      categoria: 'Desarrollo',
-      descripcion:
-        'Únete a nuestro equipo móvil para construir la próxima generación de aplicaciones móviles con React Native.',
-    },
-    {
-      id: '3',
-      titulo: 'Full Stack Engineer',
-      empresa: 'Amazon',
-      modalidad: 'presencial',
-      ubicacion: 'Seattle, WA',
-      salario: '$100k-$150k',
-      categoria: 'Desarrollo',
-      descripcion:
-        'Desarrolla soluciones end-to-end para millones de usuarios en la plataforma de AWS.',
-    },
-    {
-      id: '4',
-      titulo: 'UI/UX Designer',
-      empresa: 'Apple',
-      modalidad: 'presencial',
-      ubicacion: 'Cupertino, CA',
-      salario: '$85k-$125k',
-      categoria: 'Diseño',
-      descripcion:
-        'Diseña interfaces intuitivas y hermosas para productos que impactan millones de vidas.',
-    },
-    {
-      id: '5',
-      titulo: 'Backend Developer',
-      empresa: 'Microsoft',
-      modalidad: 'remoto',
-      ubicacion: 'Remote USA',
-      salario: '$95k-$140k',
-      categoria: 'Desarrollo',
-      descripcion:
-        'Construye servicios escalables y confiables para Azure usando .NET y tecnologías cloud.',
-    },
-    {
-      id: '6',
-      titulo: 'DevOps Engineer',
-      empresa: 'Netflix',
-      modalidad: 'hibrido',
-      ubicacion: 'Los Gatos, CA',
-      salario: '$110k-$160k',
-      categoria: 'Infraestructura',
-      descripcion:
-        'Automatiza y optimiza nuestra infraestructura para servir contenido a 200M+ usuarios.',
-    },
-    {
-      id: '7',
-      titulo: 'Product Manager',
-      empresa: 'Spotify',
-      modalidad: 'remoto',
-      ubicacion: 'Stockholm, Sweden',
-      salario: '$90k-$135k',
-      categoria: 'Producto',
-      descripcion:
-        'Lidera el desarrollo de nuevas funcionalidades para la plataforma de música más popular del mundo.',
-    },
-    {
-      id: '8',
-      titulo: 'Data Scientist',
-      empresa: 'Tesla',
-      modalidad: 'presencial',
-      ubicacion: 'Palo Alto, CA',
-      salario: '$105k-$155k',
-      categoria: 'Data Science',
-      descripcion:
-        'Analiza datos de millones de vehículos para mejorar la conducción autónoma.',
-    },
-    {
-      id: '9',
-      titulo: 'Mobile Developer',
-      empresa: 'Uber',
-      modalidad: 'hibrido',
-      ubicacion: 'San Francisco, CA',
-      salario: '$95k-$145k',
-      categoria: 'Desarrollo',
-      descripcion:
-        'Desarrolla la aplicación móvil que conecta millones de usuarios con conductores.',
-    },
-    {
-      id: '10',
-      titulo: 'Security Engineer',
-      empresa: 'Airbnb',
-      modalidad: 'remoto',
-      ubicacion: 'Remote Worldwide',
-      salario: '$100k-$150k',
-      categoria: 'Seguridad',
-      descripcion:
-        'Protege la plataforma y los datos de millones de anfitriones y huéspedes.',
-    },
-    {
-      id: '11',
-      titulo: 'QA Engineer',
-      empresa: 'Salesforce',
-      modalidad: 'hibrido',
-      ubicacion: 'San Francisco, CA',
-      salario: '$80k-$120k',
-      categoria: 'Calidad',
-      descripcion:
-        'Asegura la calidad de nuestros productos CRM usados por empresas Fortune 500.',
-    },
-    {
-      id: '12',
-      titulo: 'Cloud Architect',
-      empresa: 'IBM',
-      modalidad: 'remoto',
-      ubicacion: 'Remote USA',
-      salario: '$120k-$170k',
-      categoria: 'Arquitectura',
-      descripcion:
-        'Diseña soluciones cloud enterprise para nuestros clientes corporativos más grandes.',
-    },
-  ];
-
-  // Mock Data - Perfil
-  const mockPerfil: PerfilData = {
-    nombre: 'Juan Pérez',
-    rol: 'Frontend Developer',
-    experiencia: '3 años en desarrollo web',
-    skills: ['React', 'TypeScript', 'Next.js', 'Tailwind', 'Node.js'],
-    completitud: 75,
-  };
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -270,30 +210,38 @@ export default function PanelCandidatoPage() {
 
       {/* Main Content - 3 Column Layout */}
       <main className="p-4 md:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-[1600px] mx-auto">
-          {/* Left Column - Postulaciones (25% on desktop) */}
-          <div className="lg:col-span-1 h-[600px] lg:h-[800px]">
-            <MisPostulaciones postulaciones={mockPostulaciones} />
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[600px]">
+            <Loading />
           </div>
-
-          {/* Center Column - Propuestas (50% on desktop) */}
-          <div className="lg:col-span-2 h-[600px] lg:h-[800px]">
-            <PropuestasTrabajo vacantes={mockVacantes} />
+        ) : error ? (
+          <div className="max-w-[1600px] mx-auto">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800 text-center">{error}</p>
+            </div>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-[1600px] mx-auto">
+            {/* Left Column - Postulaciones (25% on desktop) */}
+            <div className="lg:col-span-1 h-[600px] lg:h-[800px]">
+              <MisPostulaciones postulaciones={postulaciones} />
+            </div>
 
-          {/* Right Column - Perfil (25% on desktop) */}
-          <div className="lg:col-span-1 h-[600px] lg:h-[800px]">
-            <PerfilCandidato perfil={mockPerfil} />
+            {/* Center Column - Propuestas (50% on desktop) */}
+            <div className="lg:col-span-2 h-[600px] lg:h-[800px]">
+              <PropuestasTrabajo vacantes={vacantes} />
+            </div>
+
+            {/* Right Column - Perfil (25% on desktop) */}
+            <div className="lg:col-span-1 h-[600px] lg:h-[800px]">
+              {perfil ? <PerfilCandidato perfil={perfil} /> : (
+                <div className="bg-white rounded-xl border border-neutral-200 h-full flex items-center justify-center">
+                  <p className="text-sm text-neutral-600">No se pudo cargar el perfil</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-
-        {/* Info Message */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-[1600px] mx-auto">
-          <p className="text-sm text-blue-800 text-center">
-            <strong>Panel en Modo Demo:</strong> Esta vista muestra datos de ejemplo. Las
-            funcionalidades completas estarán disponibles cuando se conecte con la base de datos.
-          </p>
-        </div>
+        )}
       </main>
     </div>
   );

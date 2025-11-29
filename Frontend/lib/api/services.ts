@@ -186,3 +186,40 @@ export const cargoService = {
     return apiClient.delete(API_ENDPOINTS.CARGO_BY_ID(id));
   },
 };
+
+// ============================================
+// HISTORIAL SERVICES
+// ============================================
+
+export interface HistorialAplicacion {
+  id: string;
+  candidato_id: string;
+  cargo_id: string;
+  estado: string;
+  fecha: string;
+  cargo_nombre?: string;
+  cargo_descripcion?: string;
+  cargo_modalidad?: string;
+  salario_min?: number;
+  salario_max?: number;
+  empresa_nombre?: string;
+  empresa_logo?: string;
+}
+
+export const historialService = {
+  getAll: async (): Promise<ApiResponse<HistorialAplicacion[]>> => {
+    return apiClient.get(API_ENDPOINTS.HISTORIAL);
+  },
+
+  getByCandidato: async (candidatoId: string): Promise<ApiResponse<HistorialAplicacion[]>> => {
+    return apiClient.get(API_ENDPOINTS.HISTORIAL_BY_CANDIDATO(candidatoId));
+  },
+
+  create: async (data: {
+    candidato_id: string;
+    cargo_id: string;
+    estado?: string;
+  }): Promise<ApiResponse<HistorialAplicacion>> => {
+    return apiClient.post(API_ENDPOINTS.HISTORIAL, data);
+  },
+};
