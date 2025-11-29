@@ -8,6 +8,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Building2, UserCircle2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
+import { AnimatedLogo } from '@/components/common/AnimatedLogo';
 
 export default function Home() {
   const router = useRouter();
@@ -30,11 +31,13 @@ export default function Home() {
       </div>
 
       <div className="max-w-5xl w-full">
-        {/* Header */}
+        {/* Header with Animated Logo */}
         <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-neutral-900 to-neutral-700 dark:from-white dark:to-neutral-400 bg-clip-text text-transparent mb-4 transition-all duration-500">
-            CrewAI
-          </h1>
+          {/* Animated Logo */}
+          <div className="flex justify-center mb-6">
+            <AnimatedLogo size="xl" showText={true} animate={true} />
+          </div>
+
           <p className="text-base sm:text-lg md:text-xl text-neutral-700 dark:text-neutral-200 transition-colors duration-500">
             Plataforma de entrevistas inteligentes
           </p>

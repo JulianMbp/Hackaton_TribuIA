@@ -7,6 +7,7 @@ import { MisPostulaciones, Postulacion } from '@/components/candidato/MisPostula
 import { PropuestasTrabajo, Vacante } from '@/components/candidato/PropuestasTrabajo';
 import { PerfilCandidato, PerfilData } from '@/components/candidato/PerfilCandidato';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
+import { AnimatedLogo } from '@/components/common/AnimatedLogo';
 
 export default function PanelCandidatoPage() {
   const router = useRouter();
@@ -230,9 +231,8 @@ export default function PanelCandidatoPage() {
       <header className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 sticky top-0 z-20 shadow-sm dark:shadow-neutral-900/50 transition-all duration-500">
         <div className="px-4 md:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-neutral-900 to-neutral-700 dark:from-white dark:to-neutral-200 rounded-lg flex items-center justify-center shadow-md transition-all duration-500">
-              <UserCircle2 className="w-6 h-6 text-white dark:text-neutral-900" />
-            </div>
+            {/* Animated Logo */}
+            <AnimatedLogo size="sm" showText={false} animate={true} />
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-neutral-900 dark:text-white transition-colors duration-500">Panel de Candidato</h1>
               <p className="text-xs md:text-sm text-neutral-600 dark:text-neutral-400 hidden sm:block transition-colors duration-500">
