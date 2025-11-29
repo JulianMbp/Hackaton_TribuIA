@@ -542,16 +542,145 @@
       "main": [
         [
           {
-            "node": "HTTP Request - Guardar Respuestas",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "HTTP Request - Guardar Puntajes",
+            "node": "HTTP Request - Verificar/Crear Entrevista",
             "type": "main",
             "index": 0
           }
         ]
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Set - Configuración Evaluación').first().json.supabase_url }}/rest/v1/entrevistas?id=eq.{{ $('Código - Procesar Evaluación').first().json.entrevista_id }}&select=*",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "verify-interview-001",
+      "name": "HTTP Request - Verificar/Crear Entrevista",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        688,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener resultado de la verificación de entrevista\nconst verifyResponse = $json;\nconst entrevistaId = $('Código - Procesar Evaluación').first().json.entrevista_id;\nconst respuestas = $('Código - Procesar Evaluación').first().json.respuestas || [];\n\n// Verificar si la entrevista existe (la respuesta puede ser array vacío o tener datos)\nconst entrevistaExiste = Array.isArray(verifyResponse) && verifyResponse.length > 0;\n\nif (!entrevistaExiste && respuestas.length > 0) {\n  // Obtener pregunta_id de la primera respuesta\n  const primeraPreguntaId = respuestas[0]?.pregunta_id;\n  \n  if (primeraPreguntaId) {\n    // Retornar información para crear la entrevista\n    return {\n      necesita_crear_entrevista: true,\n      entrevista_id: entrevistaId,\n      primera_pregunta_id: primeraPreguntaId\n    };\n  }\n}\n\n// Si la entrevista existe, continuar normalmente\nreturn {\n  necesita_crear_entrevista: false,\n  entrevista_id: entrevistaId\n};"
+      },
+      "id": "code-check-interview-001",
+      "name": "Código - Verificar Si Crear Entrevista",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Set - Configuración Evaluación').first().json.supabase_url }}/rest/v1/preguntas?id=eq.{{ $json.primera_pregunta_id }}&select=entrevista_id,entrevistas!inner(candidato_id,cargo_id)",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "get-pregunta-data-001",
+      "name": "HTTP Request - Obtener Datos Pregunta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1136,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Set - Configuración Evaluación').first().json.supabase_url }}/rest/v1/entrevistas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Set - Configuración Evaluación').first().json.supabase_anon_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"id\": $('Código - Verificar Si Crear Entrevista').first().json.entrevista_id, \"candidato_id\": $json[0].entrevistas.candidato_id, \"cargo_id\": $json[0].entrevistas.cargo_id, \"estado\": \"en_proceso\", \"metodo\": \"IA\", \"started_at\": new Date().toISOString() } }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "create-interview-001",
+      "name": "HTTP Request - Crear Entrevista",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1360,
+        1680
       ]
     },
     "HTTP Request - Guardar Respuestas": {
@@ -581,6 +710,65 @@
         [
           {
             "node": "Respond - Evaluación Completada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Verificar/Crear Entrevista": {
+      "main": [
+        [
+          {
+            "node": "Código - Verificar Si Crear Entrevista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Código - Verificar Si Crear Entrevista": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Guardar Respuestas",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request - Guardar Puntajes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request - Obtener Datos Pregunta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Obtener Datos Pregunta": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Crear Entrevista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Crear Entrevista": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Guardar Respuestas",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request - Guardar Puntajes",
             "type": "main",
             "index": 0
           }
