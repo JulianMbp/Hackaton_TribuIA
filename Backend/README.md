@@ -74,3 +74,11 @@ Esta opción permite levantar el backend en un contenedor listo para producción
 - La API llama al webhook configurado en `N8N_WEBHOOK_URL`, que se encarga de descargar el archivo, extraer texto, procesarlo con IA y registrar candidato, CV e historial de aplicación; si el webhook falla, se responde con éxito parcial indicando que el CV fue subido pero la postulación no pudo procesarse automáticamente. [attached_file:2]
 
 Con esta guía, cualquier miembro del equipo puede configurar las variables de entorno, levantar el backend en local o en Docker y comenzar a consumir los endpoints desde Postman o desde el frontend del proyecto. [attached_file:2][image:1]
+
+---
+
+## 📄 Licencia
+
+Este proyecto está licenciado únicamente para **uso educativo**. Ver el archivo [LICENSE](../LICENSE) en la raíz del repositorio para más detalles.
+
+**IMPORTANTE:** Este software está destinado exclusivamente para fines educativos y de aprendizaje. No está permitido su uso comercial, distribución comercial, o cualquier otro uso que no sea estrictamente educativo.

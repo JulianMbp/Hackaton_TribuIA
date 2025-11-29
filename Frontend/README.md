@@ -314,7 +314,9 @@ Este es un proyecto profesional construido con las mejores prácticas de desarro
 
 ## 📄 Licencia
 
-Proyecto CrewAI - 2024
+Este proyecto está licenciado únicamente para **uso educativo**. Ver el archivo [LICENSE](../LICENSE) en la raíz del repositorio para más detalles.
+
+**IMPORTANTE:** Este software está destinado exclusivamente para fines educativos y de aprendizaje. No está permitido su uso comercial, distribución comercial, o cualquier otro uso que no sea estrictamente educativo.
 
 ---
 

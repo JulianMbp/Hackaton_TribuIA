@@ -214,7 +214,8 @@ Los workflows exponen webhooks que el backend consume (por ejemplo, desde `/api/
 
 ---
 
-## 📄 Licencia y uso
+## 📄 Licencia
 
-Este monorepo está pensado para proyectos de hackathon, prototipos o exploraciones internas de plataformas de reclutamiento con IA.  
-La licencia exacta puede adaptarse a las necesidades del equipo (por ejemplo, MIT/ISC); en ausencia de indicación explícita, se asume uso interno/experimental. [attached_file:3]
+Este proyecto está licenciado únicamente para **uso educativo**. Ver el archivo [LICENSE](LICENSE) para más detalles.
+
+**IMPORTANTE:** Este software está destinado exclusivamente para fines educativos y de aprendizaje. No está permitido su uso comercial, distribución comercial, o cualquier otro uso que no sea estrictamente educativo.
