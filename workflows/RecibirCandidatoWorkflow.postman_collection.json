@@ -1,0 +1,49 @@
+{
+  "info": {
+    "_postman_id": "f8c5f7d6-7e4b-4b9a-b2f8-123456789abc",
+    "name": "RecibirCandidatoWorkflow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Colección para probar el webhook `candidate_intake` del workflow de n8n."
+  },
+  "item": [
+    {
+      "name": "Candidate Intake",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cv_url\": \"https://example.com/sample_cv.pdf\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/webhook/candidate_intake",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "webhook",
+            "candidate_intake"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5678",
+      "type": "string"
+    }
+  ]
+}
