@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
   // Entrevistas
   ENTREVISTAS: '/api/entrevistas',
   ENTREVISTA_BY_ID: (id: string) => `/api/entrevistas/${id}`,
+  ENTREVISTAS_CON_PUNTAJES: '/api/entrevistas/con-puntajes',
   START_INTERVIEW: (id: string) => `/api/entrevistas/${id}/start`,
   COMPLETE_INTERVIEW: (id: string) => `/api/entrevistas/${id}/complete`,
 

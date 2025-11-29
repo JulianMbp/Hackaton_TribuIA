@@ -83,6 +83,28 @@ export const candidatoService = {
 // ENTREVISTA SERVICES
 // ============================================
 
+export interface Puntaje {
+  id: string;
+  criterio: string;
+  valor: number;
+}
+
+export interface EntrevistaConPuntajes {
+  entrevista_id: string;
+  candidato_id: string;
+  cargo_id: string;
+  entrevista_estado: string;
+  metodo: string;
+  puntaje_final: number | null;
+  started_at: string | null;
+  finished_at: string | null;
+  candidato_nombre: string;
+  candidato_email: string;
+  candidato_skills: string | null;
+  candidato_experiencia: number | null;
+  puntajes: Puntaje[];
+}
+
 export const entrevistaService = {
   getAll: async (): Promise<ApiResponse<Entrevista[]>> => {
     return apiClient.get(API_ENDPOINTS.ENTREVISTAS);
@@ -117,6 +139,13 @@ export const entrevistaService = {
       preguntaId,
       respuesta,
     });
+  },
+
+  getConPuntajes: async (cargoId?: string): Promise<ApiResponse<EntrevistaConPuntajes[]>> => {
+    const url = cargoId 
+      ? `${API_ENDPOINTS.ENTREVISTAS_CON_PUNTAJES}?cargo_id=${cargoId}`
+      : API_ENDPOINTS.ENTREVISTAS_CON_PUNTAJES;
+    return apiClient.get(url);
   },
 };
 

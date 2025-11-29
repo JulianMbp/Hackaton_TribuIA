@@ -1,10 +1,10 @@
 "use client";
 import { Loading } from "@/components/common/Loading";
-import { candidatoService, cargoService, HistorialAplicacion, historialService } from "@/lib/api/services";
+import { candidatoService, cargoService, EntrevistaConPuntajes, entrevistaService, HistorialAplicacion, historialService } from "@/lib/api/services";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { useNotification } from "@/lib/contexts/NotificationContext";
 import { Candidato, Cargo } from "@/lib/types";
-import { ArrowLeft, CheckCircle, Clock, LogOut, TrendingUp, Users, XCircle } from "lucide-react";
+import { ArrowLeft, Award, CheckCircle, Clock, LogOut, TrendingUp, Users, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -24,6 +24,9 @@ interface EnrichedCandidate {
   experiencia: string;
   estado: CandidateStatus;
   fechaPostulacion: string;
+  puntajeFinal?: number | null;
+  tieneEntrevista?: boolean;
+  entrevistaEstado?: string;
 }
 
 interface CandidatoSugerido extends EnrichedCandidate {
@@ -38,6 +41,7 @@ export default function CandidatosDashboard() {
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [historial, setHistorial] = useState<HistorialAplicacion[]>([]);
+  const [entrevistasConPuntajes, setEntrevistasConPuntajes] = useState<EntrevistaConPuntajes[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Postulaciones derivadas de cargos + historial de aplicaciones:
@@ -57,6 +61,13 @@ export default function CandidatosDashboard() {
     const candidatosMap = new Map<string, Candidato>();
     candidatos.forEach((c) => {
       candidatosMap.set(c.id, c);
+    });
+
+    // Crear un mapa de entrevistas por candidato_id y cargo_id
+    const entrevistasMap = new Map<string, EntrevistaConPuntajes>();
+    entrevistasConPuntajes.forEach((e) => {
+      const key = `${e.candidato_id}_${e.cargo_id}`;
+      entrevistasMap.set(key, e);
     });
 
     // Asignar candidatos a sus cargos usando historial_aplicaciones
@@ -91,6 +102,10 @@ export default function CandidatosDashboard() {
         estado = 'pendiente';
       }
 
+      // Buscar entrevista para este candidato y cargo
+      const entrevistaKey = `${candidato.id}_${cargoId}`;
+      const entrevista = entrevistasMap.get(entrevistaKey);
+
       map[cargoId].candidatos.push({
         id: candidato.id,
         nombre: candidato.nombre,
@@ -98,6 +113,9 @@ export default function CandidatosDashboard() {
         experiencia,
         estado,
         fechaPostulacion,
+        puntajeFinal: entrevista?.puntaje_final ?? null,
+        tieneEntrevista: !!entrevista,
+        entrevistaEstado: entrevista?.entrevista_estado ?? undefined,
       });
     });
 
@@ -125,7 +143,7 @@ export default function CandidatosDashboard() {
       const cb = cargos.find((c) => c.id === b.id)?.created_at || '';
       return cb.localeCompare(ca);
     });
-  }, [cargos, candidatos, historial]);
+  }, [cargos, candidatos, historial, entrevistasConPuntajes]);
 
   // Candidatos sugeridos simples: top por años de experiencia
   const sugeridos: CandidatoSugerido[] = useMemo(() => {
@@ -186,6 +204,12 @@ export default function CandidatosDashboard() {
         if (historialRes.success && historialRes.data) {
           setHistorial(historialRes.data);
         }
+
+        // Cargar todas las entrevistas con puntajes
+        const entrevistasRes = await entrevistaService.getConPuntajes();
+        if (entrevistasRes.success && entrevistasRes.data) {
+          setEntrevistasConPuntajes(entrevistasRes.data);
+        }
       } catch (error) {
         console.error(error);
         showNotification('error', 'No se pudieron cargar candidatos y vacantes');
@@ -196,6 +220,28 @@ export default function CandidatosDashboard() {
 
     loadData();
   }, [showNotification]);
+
+  // Cargar entrevistas filtradas cuando se selecciona una postulación
+  useEffect(() => {
+    const loadEntrevistasPorCargo = async () => {
+      if (!selectedPostulacion) return;
+
+      try {
+        const entrevistasRes = await entrevistaService.getConPuntajes(selectedPostulacion.id);
+        if (entrevistasRes.success && entrevistasRes.data && Array.isArray(entrevistasRes.data)) {
+          // Actualizar solo las entrevistas del cargo seleccionado
+          setEntrevistasConPuntajes(prev => {
+            const otras = prev.filter(e => e.cargo_id !== selectedPostulacion.id);
+            return [...otras, ...entrevistasRes.data!];
+          });
+        }
+      } catch (error) {
+        console.error('Error al cargar entrevistas del cargo:', error);
+      }
+    };
+
+    loadEntrevistasPorCargo();
+  }, [selectedPostulacion]);
 
   useEffect(() => {
     if (!selectedCandidate && sugeridos.length > 0) {
@@ -562,26 +608,66 @@ export default function CandidatosDashboard() {
             <div>
               <h3 className="text-lg font-semibold text-neutral-900 mb-4">Candidatos Postulados</h3>
               <div className="space-y-3">
-                {selectedPostulacion.candidatos.map((candidato) => (
+                {selectedPostulacion.candidatos
+                  .sort((a, b) => {
+                    // Ordenar por puntaje final descendente, luego por nombre
+                    const puntajeA = a.puntajeFinal ?? -1;
+                    const puntajeB = b.puntajeFinal ?? -1;
+                    if (puntajeA !== puntajeB) {
+                      return puntajeB - puntajeA;
+                    }
+                    return a.nombre.localeCompare(b.nombre);
+                  })
+                  .map((candidato) => (
                   <div
                     key={candidato.id}
                     className="flex items-center justify-between p-4 border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-all duration-200"
                   >
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4 flex-1">
                       <div className="bg-gradient-to-br from-neutral-100 to-neutral-200 w-12 h-12 rounded-full flex items-center justify-center">
                         <span className="text-lg font-bold text-neutral-600">
                           {candidato.nombre.charAt(0)}
                         </span>
                       </div>
-                      <div>
-                        <p className="font-semibold text-neutral-900">{candidato.nombre}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-semibold text-neutral-900">{candidato.nombre}</p>
+                          {candidato.tieneEntrevista && (
+                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full flex items-center gap-1">
+                              <Award className="w-3 h-3" />
+                              Entrevistado
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-neutral-600">{candidato.profesion} • {candidato.experiencia}</p>
                         <p className="text-xs text-neutral-500 mt-1">Postulado: {candidato.fechaPostulacion}</p>
+                        {candidato.puntajeFinal !== null && candidato.puntajeFinal !== undefined && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <TrendingUp className="w-4 h-4 text-purple-600" />
+                              <span className="text-sm font-bold text-purple-600">
+                                Puntaje: {candidato.puntajeFinal.toFixed(1)}/100
+                              </span>
+                            </div>
+                            {candidato.entrevistaEstado && (
+                              <span className="text-xs text-neutral-500">
+                                ({candidato.entrevistaEstado})
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${getEstadoBadgeClass(candidato.estado)}`}>
-                      {candidato.estado.charAt(0).toUpperCase() + candidato.estado.slice(1)}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${getEstadoBadgeClass(candidato.estado)}`}>
+                        {candidato.estado.charAt(0).toUpperCase() + candidato.estado.slice(1)}
+                      </span>
+                      {candidato.puntajeFinal !== null && candidato.puntajeFinal !== undefined && (
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                          {candidato.puntajeFinal.toFixed(0)}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
