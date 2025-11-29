@@ -16,7 +16,29 @@ router.get('/', async (req, res, next) => {
     });
     
     console.log('📋 Obteniendo historial para candidato_id:', candidato_id);
+    console.log('📋 Tipo de candidato_id:', typeof candidato_id);
     
+    // Primero intentamos con la query simple para verificar que hay datos
+    let simpleQuery = 'SELECT * FROM historial_aplicaciones';
+    const simpleValues = [];
+    if (candidato_id) {
+      simpleQuery += ' WHERE candidato_id = $1';
+      simpleValues.push(candidato_id);
+    }
+    simpleQuery += ' ORDER BY fecha DESC NULLS LAST';
+    
+    console.log('🔍 Query simple ejecutada:', simpleQuery);
+    console.log('📊 Valores simples:', simpleValues);
+    
+    const { rows: simpleRows } = await pool.query(simpleQuery, simpleValues);
+    console.log('📊 Registros encontrados (query simple):', simpleRows.length);
+    
+    if (simpleRows.length === 0) {
+      console.log('⚠️ No se encontraron registros en historial_aplicaciones');
+      return res.json([]);
+    }
+    
+    // Si hay datos, intentamos la query con JOINs para obtener más información
     let query = `
       SELECT 
         ha.id,
@@ -43,19 +65,24 @@ router.get('/', async (req, res, next) => {
     
     query += ' ORDER BY COALESCE(ha.fecha, NOW()) DESC';
     
-    console.log('🔍 Query ejecutada:', query);
+    console.log('🔍 Query con JOINs ejecutada:', query);
     console.log('📊 Valores:', values);
     
     const { rows } = await pool.query(query, values);
     
     console.log('✅ Historial encontrado:', rows.length, 'registros');
+    if (rows.length > 0) {
+      console.log('📋 Primer registro:', JSON.stringify(rows[0], null, 2));
+    }
     
     res.json(rows);
   } catch (err) {
-    console.error('Error en GET /api/historial:', err);
+    console.error('❌ Error en GET /api/historial:', err);
     console.error('Error message:', err.message);
     console.error('Error code:', err.code);
+    console.error('Error stack:', err.stack);
     console.error('Query params:', req.query);
+    
     // Si falla con JOIN, intentamos sin JOIN
     try {
       let simpleQuery = 'SELECT * FROM historial_aplicaciones';
@@ -65,10 +92,12 @@ router.get('/', async (req, res, next) => {
         values.push(req.query.candidato_id);
       }
       simpleQuery += ' ORDER BY fecha DESC NULLS LAST';
+      console.log('🔄 Intentando query simple como fallback:', simpleQuery);
       const { rows } = await pool.query(simpleQuery, values);
+      console.log('✅ Query simple exitosa, registros:', rows.length);
       res.json(rows);
     } catch (err2) {
-      console.error('Error en query simple:', err2);
+      console.error('❌ Error en query simple:', err2);
       next(err2);
     }
   }

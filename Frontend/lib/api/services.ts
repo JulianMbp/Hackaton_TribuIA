@@ -240,8 +240,16 @@ export const postulacionService = {
   postularse: async (
     cargoId: string,
     cvFile: File,
-    candidatoId?: string
+    candidatoId: string // Ahora es requerido, no opcional
   ): Promise<ApiResponse<PostulacionResponse>> => {
+    // Validar que candidatoId esté presente
+    if (!candidatoId) {
+      console.error('❌ Error: candidatoId es requerido');
+      return {
+        success: false,
+        error: 'El ID del candidato es requerido para postularse',
+      };
+    }
     try {
       // Paso 1: Subir el CV al backend para obtener la URL
       const uploadFormData = new FormData();
@@ -297,12 +305,14 @@ export const postulacionService = {
 
       console.log('✅ CV subido, URL:', cvUrl);
       console.log('📋 Cargo ID a enviar a n8n:', finalCargoId);
+      console.log('👤 Candidato ID a enviar a n8n:', candidatoId);
 
       // Paso 2: Enviar los datos directamente a n8n
+      // candidatoId ya está validado arriba, así que siempre estará presente
       const n8nPayload = {
         cv_url: cvUrl,
         cargo_id: String(finalCargoId), // Asegurar que sea string
-        candidato_id: candidatoId ? String(candidatoId) : null,
+        candidato_id: String(candidatoId), // Siempre enviar el ID del candidato
         estado: 'aplicado',
       };
 
@@ -310,6 +320,8 @@ export const postulacionService = {
         ...n8nPayload,
         cargo_id_type: typeof n8nPayload.cargo_id,
         cargo_id_value: n8nPayload.cargo_id,
+        candidato_id_type: typeof n8nPayload.candidato_id,
+        candidato_id_value: n8nPayload.candidato_id,
       });
 
       const n8nResponse = await fetch(API_CONFIG.N8N_WEBHOOK_URL, {

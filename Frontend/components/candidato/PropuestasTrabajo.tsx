@@ -72,7 +72,17 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
     setMensaje(null);
 
     try {
-      const candidatoId = user.id || undefined;
+      // Validar que el usuario esté autenticado y tenga ID
+      if (!user || !user.id) {
+        setMensaje({
+          tipo: 'error',
+          texto: 'Error: Debes estar autenticado para postularte. Por favor, inicia sesión.',
+        });
+        setSubiendo(false);
+        return;
+      }
+
+      const candidatoId = user.id;
       
       // Validar que la vacante tenga ID
       if (!vacanteSeleccionada || !vacanteSeleccionada.id) {
@@ -88,13 +98,15 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
         vacante_id: vacanteSeleccionada.id,
         vacante_titulo: vacanteSeleccionada.titulo,
         candidato_id: candidatoId,
+        candidato_nombre: user.nombre,
         file_name: file.name,
       });
 
+      // candidatoId ya está validado arriba, así que siempre estará presente
       const response = await postulacionService.postularse(
         vacanteSeleccionada.id,
         file,
-        candidatoId
+        candidatoId // Ya validado que existe
       );
 
       if (response.success) {

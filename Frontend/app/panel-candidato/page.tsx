@@ -145,13 +145,22 @@ export default function PanelCandidatoPage() {
 
         // Cargar postulaciones (historial)
         try {
+          console.log('📋 Cargando historial para candidato:', user.id);
           const historialResponse = await historialService.getByCandidato(user.id);
+          console.log('📋 Respuesta del historial:', historialResponse);
+          
           if (historialResponse.success && historialResponse.data) {
+            console.log('📋 Datos del historial recibidos:', historialResponse.data);
+            console.log('📋 Cantidad de registros:', historialResponse.data.length);
             const postulacionesMapeadas = mapHistorialToPostulaciones(historialResponse.data);
+            console.log('📋 Postulaciones mapeadas:', postulacionesMapeadas);
             setPostulaciones(postulacionesMapeadas);
+          } else {
+            console.warn('⚠️ No se recibieron datos del historial o la respuesta no fue exitosa');
+            setPostulaciones([]);
           }
         } catch (err) {
-          console.error('Error al cargar postulaciones:', err);
+          console.error('❌ Error al cargar postulaciones:', err);
           // Continuar aunque falle, mostrar array vacío
           setPostulaciones([]);
         }
