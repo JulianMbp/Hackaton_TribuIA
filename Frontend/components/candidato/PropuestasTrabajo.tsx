@@ -73,6 +73,24 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
 
     try {
       const candidatoId = user.id || undefined;
+      
+      // Validar que la vacante tenga ID
+      if (!vacanteSeleccionada || !vacanteSeleccionada.id) {
+        setMensaje({
+          tipo: 'error',
+          texto: 'Error: No se pudo identificar la vacante seleccionada.',
+        });
+        setSubiendo(false);
+        return;
+      }
+
+      console.log('📋 Datos de postulación:', {
+        vacante_id: vacanteSeleccionada.id,
+        vacante_titulo: vacanteSeleccionada.titulo,
+        candidato_id: candidatoId,
+        file_name: file.name,
+      });
+
       const response = await postulacionService.postularse(
         vacanteSeleccionada.id,
         file,
@@ -86,10 +104,12 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
         });
         setVacantesPostuladas((prev) => new Set(prev).add(vacanteSeleccionada.id));
         
-        // Cerrar el modal después de 3 segundos
+        // Recargar la página después de 2 segundos para actualizar el historial
         setTimeout(() => {
           cerrarModal();
-        }, 3000);
+          // Recargar la página para actualizar el historial de postulaciones
+          window.location.reload();
+        }, 2000);
       } else {
         setMensaje({
           tipo: 'error',

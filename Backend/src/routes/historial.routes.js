@@ -8,6 +8,15 @@ router.get('/', async (req, res, next) => {
   try {
     const { candidato_id } = req.query;
     
+    // Headers para evitar caché
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
+    console.log('📋 Obteniendo historial para candidato_id:', candidato_id);
+    
     let query = `
       SELECT 
         ha.id,
@@ -34,7 +43,13 @@ router.get('/', async (req, res, next) => {
     
     query += ' ORDER BY COALESCE(ha.fecha, NOW()) DESC';
     
+    console.log('🔍 Query ejecutada:', query);
+    console.log('📊 Valores:', values);
+    
     const { rows } = await pool.query(query, values);
+    
+    console.log('✅ Historial encontrado:', rows.length, 'registros');
+    
     res.json(rows);
   } catch (err) {
     console.error('Error en GET /api/historial:', err);

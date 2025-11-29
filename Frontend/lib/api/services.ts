@@ -242,40 +242,121 @@ export const postulacionService = {
     cvFile: File,
     candidatoId?: string
   ): Promise<ApiResponse<PostulacionResponse>> => {
-    const formData = new FormData();
-    formData.append('cv', cvFile);
-    formData.append('cargo_id', cargoId);
-    if (candidatoId) {
-      formData.append('candidato_id', candidatoId);
-    }
-
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const headers: HeadersInit = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.POSTULACIONES}`, {
+      // Paso 1: Subir el CV al backend para obtener la URL
+      const uploadFormData = new FormData();
+      uploadFormData.append('cv', cvFile);
+      uploadFormData.append('cargo_id', cargoId);
+      if (candidatoId) {
+        uploadFormData.append('candidato_id', candidatoId);
+      }
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      console.log('📤 Subiendo CV al backend...');
+      const uploadResponse = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.POSTULACIONES}`, {
         method: 'POST',
         headers,
-        body: formData,
+        body: uploadFormData,
       });
 
-      const data = await response.json();
+      const uploadData = await uploadResponse.json();
 
-      if (!response.ok) {
+      if (!uploadResponse.ok) {
         return {
           success: false,
-          error: data.error || 'Error al postularse',
+          error: uploadData.error || 'Error al subir el CV',
         };
       }
 
+      // Obtener la URL del CV desde la respuesta
+      const cvUrl = uploadData.cv_url;
+      if (!cvUrl) {
+        return {
+          success: false,
+          error: 'No se pudo obtener la URL del CV',
+        };
+      }
+
+      // Obtener cargo_id de la respuesta del backend (por si acaso)
+      // pero usar el que se pasó como parámetro como prioridad
+      const finalCargoId = uploadData.cargo_id || cargoId;
+      
+      if (!finalCargoId) {
+        console.error('❌ Error: cargoId es null o undefined');
+        console.error('📊 Datos recibidos del backend:', uploadData);
+        return {
+          success: false,
+          error: 'El ID de la vacante es requerido',
+        };
+      }
+
+      console.log('✅ CV subido, URL:', cvUrl);
+      console.log('📋 Cargo ID a enviar a n8n:', finalCargoId);
+
+      // Paso 2: Enviar los datos directamente a n8n
+      const n8nPayload = {
+        cv_url: cvUrl,
+        cargo_id: String(finalCargoId), // Asegurar que sea string
+        candidato_id: candidatoId ? String(candidatoId) : null,
+        estado: 'aplicado',
+      };
+
+      console.log('📤 Enviando postulación a n8n:', {
+        ...n8nPayload,
+        cargo_id_type: typeof n8nPayload.cargo_id,
+        cargo_id_value: n8nPayload.cargo_id,
+      });
+
+      const n8nResponse = await fetch(API_CONFIG.N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(n8nPayload),
+      });
+
+      let n8nData;
+      try {
+        n8nData = await n8nResponse.json();
+      } catch {
+        // Si n8n no devuelve JSON, usar texto
+        const text = await n8nResponse.text();
+        n8nData = { message: text };
+      }
+
+      if (!n8nResponse.ok && n8nResponse.status !== 200 && n8nResponse.status !== 202) {
+        console.error('❌ Error en n8n:', n8nData);
+        // Aunque falle n8n, el CV ya está subido
+        return {
+          success: true,
+          data: {
+            success: true,
+            message: 'CV subido correctamente, pero hubo un error al procesar la postulación en n8n',
+            cv_url: cvUrl,
+            warning: 'El workflow de n8n no pudo procesar la solicitud',
+            n8n_response: n8nData,
+          },
+        };
+      }
+
+      console.log('✅ Postulación enviada a n8n exitosamente');
+
       return {
         success: true,
-        data,
+        data: {
+          success: true,
+          message: 'Postulación enviada correctamente',
+          cv_url: cvUrl,
+          n8n_response: n8nData,
+        },
       };
     } catch (error: any) {
+      console.error('❌ Error en postulación:', error);
       return {
         success: false,
         error: error.message || 'Error al postularse',

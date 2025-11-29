@@ -23,9 +23,7 @@
         "url": "={{ $json.cv_url }}",
         "options": {
           "response": {
-            "response": {
-              "responseFormat": "file"
-            }
+            "responseFormat": "file"
           }
         }
       },
@@ -103,7 +101,7 @@
             },
             {
               "name": "url_archivo",
-              "value": "={{ $('HTTP Request - Descargar CV').first().json.cv_url }}"
+              "value": "={{ $('Set - Inyectar ConfiguraciÃ³n Candidato').item.json.cv_url }}"
             },
             {
               "name": "texto_extraido",
@@ -153,7 +151,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={ \"candidato_id\": \"{{ $json.candidato_id }}\", \"cargo_id\": \"{{ $json.cargo_id }}\", \"estado\": \"{{ $json.estado }}\" }",
+        "jsonBody": "={ \"candidato_id\": \"{{ $('HTTP Request - Guardar Candidato').item.json[0].id }}\", \"cargo_id\": \"{{ $('Set - Inyectar ConfiguraciÃ³n Candidato').item.json.cargo_id }}\", \"estado\": \"{{ $('Set - Inyectar ConfiguraciÃ³n Candidato').item.json.estado || 'aplicado' }}\" }",
         "options": {}
       },
       "id": "56f3124d-03e1-47d7-9649-c7122cd9e6d4",
@@ -185,7 +183,19 @@
             {
               "id": "id-1",
               "name": "cargo_id",
-              "value": "bcacb59e-2c7f-4f1b-a6dd-470bfd861134",
+              "value": "={{ $json.body.cargo_id }}",
+              "type": "string"
+            },
+            {
+              "id": "id-6",
+              "name": "candidato_id",
+              "value": "={{ $json.body.candidato_id }}",
+              "type": "string"
+            },
+            {
+              "id": "id-7",
+              "name": "estado",
+              "value": "={{ $json.body.estado || 'aplicado' }}",
               "type": "string"
             },
             {
@@ -209,7 +219,7 @@
             {
               "id": "id-5",
               "name": "cv_url",
-              "value": "={{ JSON.parse($json.body).cv_url }}",
+              "value": "={{ $json.body.cv_url }}",
               "type": "string"
             }
           ]
@@ -353,70 +363,16 @@
             {
               "name": "Content-Type",
               "value": "application/json"
-            {
-              "name": "apikey",
-              "value": "<SUPABASE_ANON_KEY>"
             },
             {
-              "name": "Authorization",
-              "value": "Bearer <SUPABASE_ANON_KEY>"
-            },
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "nombre",
-              "value": "={{ $json.nombre }}"
-            },
-            {
-              "name": "email",
-              "value": "={{ $json.email }}"
-            },
-            {
-              "name": "password",
-              "value": "={{ $json.password }}"
-            },
-            {
-              "name": "telefono",
-              "value": "={{ $json.telefono }}"
-            },
-            {
-              "name": "pais",
-              "value": "={{ $json.pais }}"
-            },
-            {
-              "name": "ciudad",
-              "value": "={{ $json.ciudad }}"
-            },
-            {
-              "name": "experiencia_anios",
-              "value": "={{ $json.experiencia_anios }}"
-            },
-            {
-              "name": "educacion",
-              "value": "={{ $json.educacion }}"
-            },
-            {
-              "name": "skills",
-              "value": "={{ $json.skills }}"
-            },
-            {
-              "name": "cargo_aplicado",
-              "value": "={{ $json.cargo_aplicado }}"
-            },
-            {
-              "name": "portafolio_url",
-              "value": "={{ $json.portafolio_url }}"
-            },
-            {
-              "name": "github_url",
-              "value": "={{ $json.github_url }}"
-            },
-            {
-              "name": "descripcion",
-              "value": "={{ $json.descripcion }}"
+              "name": "Prefer",
+              "value": "return=representation"
             }
           ]
         },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"nombre\": \"{{ $json.nombre }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"password\": \"{{ $json.password }}\",\n  \"telefono\": \"{{ $json.telefono }}\",\n  \"pais\": \"{{ $json.pais }}\",\n  \"ciudad\": \"{{ $json.ciudad }}\",\n  \"experiencia_anios\": {{ $json.experiencia_anios }},\n  \"educacion\": \"{{ $json.educacion }}\",\n  \"skills\": \"{{ $json.skills }}\",\n  \"cargo_aplicado\": \"{{ $json.cargo_aplicado }}\",\n  \"portafolio_url\": \"{{ $json.portafolio_url }}\",\n  \"github_url\": \"{{ $json.github_url }}\",\n  \"descripcion\": \"{{ $json.descripcion }}\"\n}",
         "options": {}
       },
       "id": "311b4d65-1da6-4718-a1ce-a0406fc02369",
@@ -425,19 +381,6 @@
       "typeVersion": 4.3,
       "position": [
         23036,
-            {
-              "id": "id-3",
-              "name": "supabase_anon_key",
-              "value": "<SUPABASE_ANON_KEY>",
-              "type": "string"
-            },
-            {
-              "id": "id-4",
-              "name": "openai_api_key",
-              "value": "<OPENAI_API_KEY>",
-              "type": "string"
-            },
-        23484,
         1168
       ]
     },
@@ -517,7 +460,7 @@
       "main": [
         [
           {
-            "node": "Code - Vincular Cargo-Candidato",
+            "node": "HTTP Request - Guardar VinculaciÃ³n",
             "type": "main",
             "index": 0
           }
@@ -595,17 +538,6 @@
         [
           {
             "node": "HTTP Request - Guardar CV",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code - Vincular Cargo-Candidato": {
-      "main": [
-        [
-          {
-            "node": "HTTP Request - Guardar VinculaciÃ³n",
             "type": "main",
             "index": 0
           }

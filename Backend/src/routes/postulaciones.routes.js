@@ -1,7 +1,6 @@
 const express = require('express');
 const multer = require('multer');
 const { uploadFileToStorage } = require('../utils/supabaseStorage');
-const axios = require('axios');
 require('dotenv').config();
 
 const router = express.Router();
@@ -30,17 +29,30 @@ const upload = multer({
  */
 router.post('/', upload.single('cv'), async (req, res, next) => {
   try {
+    console.log('📥 Postulación recibida:', {
+      body: req.body,
+      file: req.file ? {
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      } : null
+    });
+
     const { cargo_id, candidato_id } = req.body;
     const file = req.file;
 
     // Validaciones
     if (!cargo_id) {
+      console.error('❌ Error: cargo_id no proporcionado');
       return res.status(400).json({ error: 'Se requiere cargo_id' });
     }
 
     if (!file) {
+      console.error('❌ Error: archivo CV no proporcionado');
       return res.status(400).json({ error: 'Se requiere un archivo CV' });
     }
+
+    console.log('✅ Validaciones pasadas:', { cargo_id, candidato_id });
 
     // Subir CV a Supabase Storage
     let cvUrl;
@@ -51,59 +63,39 @@ router.post('/', upload.single('cv'), async (req, res, next) => {
         'cvs'
       );
       cvUrl = uploadResult.url;
+      console.log('✅ CV subido exitosamente:', cvUrl);
     } catch (uploadError) {
-      console.error('Error al subir CV:', uploadError);
+      console.error('❌ Error al subir CV:', uploadError);
       return res.status(500).json({
         error: 'Error al subir el CV',
         details: uploadError.message,
       });
     }
 
-    // Llamar al webhook de n8n
-    const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/candidate_intake';
-    
-    try {
-      const n8nResponse = await axios.post(
-        n8nWebhookUrl,
-        {
-          cv_url: cvUrl,
-          cargo_id: cargo_id,
-          candidato_id: candidato_id || null,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          timeout: 30000, // 30 segundos
-        }
-      );
-
-      // El workflow de n8n se encarga de:
-      // 1. Descargar el CV
-      // 2. Extraer texto
-      // 3. Extraer información con IA
-      // 4. Guardar candidato (si no existe)
-      // 5. Guardar CV
-      // 6. Crear historial de aplicación
-
-      res.status(200).json({
-        success: true,
-        message: 'Postulación enviada correctamente',
-        cv_url: cvUrl,
-        n8n_response: n8nResponse.data,
-      });
-    } catch (n8nError) {
-      console.error('Error al llamar webhook de n8n:', n8nError);
-      
-      // Aunque falle n8n, el CV ya está subido, así que devolvemos éxito parcial
-      res.status(202).json({
-        success: true,
-        message: 'CV subido correctamente, pero hubo un error al procesar la postulación',
-        cv_url: cvUrl,
-        warning: 'El workflow de n8n no pudo procesar la solicitud. Por favor, contacta al administrador.',
-        error: n8nError.message,
+    // El frontend ahora se encarga de llamar a n8n directamente
+    // Este endpoint solo sube el CV y devuelve la URL
+    // Validar que cargo_id esté presente
+    if (!cargo_id) {
+      console.error('❌ Error: cargo_id no proporcionado en la petición');
+      return res.status(400).json({
+        error: 'Se requiere cargo_id',
+        details: 'El ID de la vacante es obligatorio',
       });
     }
+
+    console.log('✅ CV subido exitosamente:', {
+      cv_url: cvUrl,
+      cargo_id: cargo_id,
+      candidato_id: candidato_id || null,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'CV subido correctamente',
+      cv_url: cvUrl,
+      cargo_id: cargo_id,
+      candidato_id: candidato_id || null,
+    });
   } catch (err) {
     next(err);
   }
