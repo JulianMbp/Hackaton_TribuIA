@@ -1,5 +1,9 @@
 'use client';
 
+import { FileUpload } from '@/components/common/FileUpload';
+import { postulacionService } from '@/lib/api/services';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { Briefcase, CheckCircle, DollarSign, Filter, MapPin, Search, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { MapPin, DollarSign, Briefcase, Search, Filter, Check } from 'lucide-react';
 
@@ -19,6 +23,7 @@ interface PropuestasTrabajoProps {
 }
 
 export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }) => {
+  const { user } = useAuth();
   const [busqueda, setBusqueda] = useState('');
   const [filtroModalidad, setFiltroModalidad] = useState<string>('todos');
   const [vacantesPostuladas, setVacantesPostuladas] = useState<Set<string>>(new Set());
@@ -151,6 +156,72 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
           </div>
         )}
       </div>
+
+      {/* Modal de Postulación */}
+      {modalAbierto && vacanteSeleccionada && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Header del Modal */}
+            <div className="p-6 border-b border-neutral-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-neutral-900">Postularme a</h3>
+                <p className="text-sm text-neutral-600 mt-1">
+                  {vacanteSeleccionada.titulo} - {vacanteSeleccionada.empresa}
+                </p>
+              </div>
+              <button
+                onClick={cerrarModal}
+                className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                disabled={subiendo}
+              >
+                <X className="w-5 h-5 text-neutral-600" />
+              </button>
+            </div>
+
+            {/* Contenido del Modal */}
+            <div className="p-6">
+              {mensaje && (
+                <div
+                  className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+                    mensaje.tipo === 'exito'
+                      ? 'bg-green-50 text-green-800 border border-green-200'
+                      : 'bg-red-50 text-red-800 border border-red-200'
+                  }`}
+                >
+                  {mensaje.tipo === 'exito' ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    <X className="w-5 h-5" />
+                  )}
+                  <p className="text-sm">{mensaje.texto}</p>
+                </div>
+              )}
+
+              {!mensaje || mensaje.tipo === 'error' ? (
+                <>
+                  <p className="text-sm text-neutral-600 mb-4">
+                    Sube tu CV en formato PDF para postularte a esta vacante. El sistema procesará
+                    automáticamente tu información.
+                  </p>
+
+                  <FileUpload
+                    onUpload={handleSubirCV}
+                    acceptedTypes={['application/pdf']}
+                    maxSize={10}
+                    label="Subir CV (PDF)"
+                  />
+
+                  {subiendo && (
+                    <div className="mt-4 text-center">
+                      <p className="text-sm text-neutral-600">Subiendo y procesando tu CV...</p>
+                    </div>
+                  )}
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -15,6 +15,7 @@ const respuestasRouter = require('./routes/respuestas.routes');
 const puntajesRouter = require('./routes/puntajes.routes');
 const historialRouter = require('./routes/historial.routes');
 const notificacionesRouter = require('./routes/notificaciones.routes');
+const postulacionesRouter = require('./routes/postulaciones.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -45,6 +46,7 @@ app.use('/api/respuestas', respuestasRouter);
 app.use('/api/puntajes', puntajesRouter);
 app.use('/api/historial', historialRouter);
 app.use('/api/notificaciones', notificacionesRouter);
+app.use('/api/postulaciones', postulacionesRouter);
 
 // Manejo de errores 404
 app.use('*', (req, res) => {
