@@ -1,0 +1,49 @@
+{
+  "info": {
+    "_postman_id": "2a9b8c7d-1234-4ef0-9abc-abcdef123456",
+    "name": "Top10_NotificacionWorkflow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Colección para probar el workflow Top10_NotificacionWorkflow (webhook /webhook/ranking)."
+  },
+  "item": [
+    {
+      "name": "Generate Ranking",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cargo_id\": \"a7a59fed-6394-4e98-a0a3-8fc64e2c8991\",\n  \"context\": {\n    \"note\": \"Ejemplo de petición para generar ranking top 10\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/webhook/ranking",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "webhook",
+            "ranking"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5678",
+      "type": "string"
+    }
+  ]
+}

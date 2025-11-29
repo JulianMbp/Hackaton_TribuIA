@@ -1,0 +1,594 @@
+{
+  "name": "Reclutamiento IA - Pipeline Completo",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ranking",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "98a5b7f1-db4f-4c95-a0b3-e269048e7eeb",
+      "name": "Webhook - Generar Ranking",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        8864,
+        968
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "1fe9fa1b-be31-44ed-9f98-45015357e374"
+    },
+    {
+      "parameters": {
+        "url": "https://ctvbtlmxdmryckxnhjug.supabase.co/rest/v1/entrevistas?cargo_id=eq.a7a59fed-6394-4e98-a0a3-8fc64e2c8991&select=*,candidatos(*),puntajes(*)",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <SUPABASE_ANON_KEY>"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fd0c50e4-ee5b-4e3d-8cef-cb0fb322c684",
+      "name": "HTTP Request - Obtener Candidatos del Cargo",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        9312,
+        968
+      ],
+      "typeVersion": 4.3,
+      "credentials": {
+        "supabaseApi": {
+          "id": "DPKhLIRjBjvEfr9k",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "86146a89-a3d5-4b1c-9579-b83dc1f97bf3",
+      "name": "Respond - Ranking Generado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        10336,
+        968
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://ctvbtlmxdmryckxnhjug.supabase.co/rest/v1/historial_aplicaciones?candidato_id=eq.{{ $('Code - Separar Seleccionado y Rechazados').item.json.candidatos.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <SUPABASE_ANON_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"estado\": \"seleccionado\" }",
+        "options": {}
+      },
+      "id": "feb845ac-946a-4117-ae7e-f89b76f77b95",
+      "name": "HTTP Request - Marcar Seleccionado",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        10208,
+        640
+      ],
+      "typeVersion": 4.3,
+      "credentials": {
+        "supabaseApi": {
+          "id": "DPKhLIRjBjvEfr9k",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "cargo_id",
+              "value": "a7a59fed-6394-4e98-a0a3-8fc64e2c8991",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "chat_id_reclutador",
+              "value": "2113634059",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c2d27e16-e74f-49f2-959a-94f33f95a9fa",
+      "name": "Set - Inyectar ConfiguraciÃ³n Ranking",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        9088,
+        968
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analiza los siguientes candidatos y genera un ranking top 10 basado en sus scores, habilidades, fortalezas y debilidades:\n\n{{ JSON.stringify($json.candidatos) }}",
+        "options": {
+          "systemMessage": "Eres un asistente de reclutamiento especializado en análisis de candidatos.\n\nTu tarea es:\n1. Analizar los datos de los candidatos proporcionados\n2. Evaluar sus scores, habilidades, fortalezas y debilidades\n3. Generar un ranking de los top 10 candidatos\n4. Formatear el resultado como un mensaje de texto limpio y legible para Telegram\n\nIMPORTANTE:\n- NO uses tablas ni caracteres especiales de formato\n- Presenta cada candidato en líneas separadas con UN SALTO DE LÍNEA entre cada uno\n- Usa emojis para hacer el mensaje más visual (🥇🥈🥉 para top 3, ⭐ para highlights)\n- Formato sugerido para cada candidato:\n  Posición + Emoji + Nombre + Score + Highlights principales\n- Mantén el mensaje claro, profesional y fácil de leer en dispositivos móviles\n- Todo el ranking debe estar en UN SOLO mensaje\n- Al final del ranking, agrega DOS saltos de línea y luego un mensaje destacado indicando cuál es el mejor candidato con su nombre y score\n\nDevuelve SOLO el ranking formateado con el mensaje del mejor candidato al final, sin texto adicional antes o después."
+        }
+      },
+      "id": "4aadf98e-b1c0-4a32-9b38-c5daf9a5511e",
+      "name": "AI Agent - Analizar Ranking",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        9760,
+        968
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "a1e1f40b-a613-492d-918e-80df069cd293",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        9832,
+        1192
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "iYlruSbnBpSmyZIk",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const message = $input.item.json.message?.text || '';\n\n// Ignorar comandos de Telegram y mensajes vacíos\nif (message.startsWith('/') || message.trim().length === 0) {\n  return {\n    candidateName: null,\n    originalMessage: message,\n    chatId: $input.item.json.message?.chat?.id,\n    isCommand: true\n  };\n}\n\n// Intentar diferentes patrones para extraer el nombre\nlet candidateName = null;\n\n// Patrón 1: \"notifica a [nombre]\"\nlet match = message.match(/notifica\\s+a\\s+([A-Za-zÁÉÍÓÚáéíóúÑñ\\s]+)/i);\nif (match) {\n  candidateName = match[1].trim();\n}\n\n// Patrón 2: \"seleccionar [nombre]\"\nif (!candidateName) {\n  match = message.match(/seleccionar\\s+([A-Za-zÁÉÍÓÚáéíóúÑñ\\s]+)/i);\n  if (match) {\n    candidateName = match[1].trim();\n  }\n}\n\n// Patrón 3: Solo el nombre (si no hay palabras clave)\nif (!candidateName && message.length > 0 && message.length < 50) {\n  // Si el mensaje es corto y no tiene palabras clave, asumimos que es el nombre\n  candidateName = message.trim();\n}\n\nreturn {\n  candidateName,\n  originalMessage: message,\n  chatId: $input.item.json.message?.chat?.id,\n  isCommand: false\n};"
+      },
+      "id": "95a4ca37-a157-4947-8757-e5a53bdd05da",
+      "name": "Code - Extraer Número Candidato",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9088,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://ctvbtlmxdmryckxnhjug.supabase.co/rest/v1/entrevistas?select=*,candidatos(*),puntajes(*)&order=puntaje_final.desc&limit=10",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $workflow.settings.supabase_anon_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $workflow.settings.supabase_anon_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "582a96df-63f6-4e35-8e84-9691d92f9284",
+      "name": "HTTP Request - Obtener Top 10",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        9536,
+        640
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "DPKhLIRjBjvEfr9k",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const candidateName = $('Code - Extraer Número Candidato').item.json.candidateName;\nconst candidates = $input.all();\n\nif (candidates.length === 0) {\n  throw new Error('No se encontraron candidatos en el ranking');\n}\n\nif (!candidateName) {\n  throw new Error('No se pudo extraer el nombre del candidato del mensaje');\n}\n\n// Buscar candidato por nombre (case insensitive)\nconst selectedCandidate = candidates.find(c => {\n  const nombre = c.json.candidatos?.nombre || '';\n  return nombre.toLowerCase().includes(candidateName.toLowerCase()) || candidateName.toLowerCase().includes(nombre.toLowerCase());\n});\n\nif (!selectedCandidate) {\n  throw new Error(`No se encontró el candidato: ${candidateName}`);\n}\n\n// Extraer el candidato_id correctamente del objeto\nconst candidatoId = selectedCandidate.json.candidato_id || selectedCandidate.json.candidatos?.id || '';\n\nreturn {\n  ...selectedCandidate.json,\n  candidato_id: candidatoId,\n  email_candidato: selectedCandidate.json.candidatos?.email,\n  nombre_candidato: selectedCandidate.json.candidatos?.nombre,\n  telefono_candidato: selectedCandidate.json.candidatos?.telefono\n};"
+      },
+      "id": "204fbe47-f71f-440d-a03e-269a8500724b",
+      "name": "Code - Separar Seleccionado y Rechazados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9760,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "e668dd07-8770-43c9-a5d0-914965d9b0a8",
+      "name": "Telegram Trigger - Selección",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        8864,
+        640
+      ],
+      "webhookId": "9b7f7ba7-9d9d-4eb3-94c2-2724ae1cd245",
+      "credentials": {
+        "telegramApi": {
+          "id": "yoYPsWbKfx1sUF6Q",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "2113634059",
+        "text": "={{ $('AI Agent - Analizar Ranking').item.json.output }}",
+        "additionalFields": {}
+      },
+      "id": "5848f41f-d2bd-4978-82e8-b2f962aa2081",
+      "name": "Telegram - Enviar Ranking",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        10112,
+        968
+      ],
+      "webhookId": "07260ed6-a3e6-4d45-ab64-39fa8af6f044",
+      "credentials": {
+        "telegramApi": {
+          "id": "yoYPsWbKfx1sUF6Q",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "2113634059",
+        "text": "=¡Felicitaciones {{ $json.nombre_candidato }}! Has sido seleccionado para el cargo. Se creará un evento en Google Calendar.",
+        "additionalFields": {}
+      },
+      "id": "d041adf3-a28d-42cc-9d45-3bdf961d8477",
+      "name": "Telegram - Notificar Seleccionado",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        9984,
+        640
+      ],
+      "webhookId": "c8e1bf52-ef5d-4518-ad38-414060a10461",
+      "credentials": {
+        "telegramApi": {
+          "id": "yoYPsWbKfx1sUF6Q",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "2113634059",
+        "text": "=✅ Evento creado para {{ $('Code - Separar Seleccionado y Rechazados').item.json.nombre_candidato }}\n\n📅 Fecha: {{ $('Google Calendar - Crear Evento').item.json.start.dateTime.split('T')[0] }}\n⏰ Hora: {{ $('Google Calendar - Crear Evento').item.json.start.dateTime.split('T')[1].substring(0,5) }}\n\n🔗 Link: {{ $('Google Calendar - Crear Evento').item.json.htmlLink }}",
+        "additionalFields": {}
+      },
+      "id": "bb256e97-fe47-49f3-8ab3-58cf71e250dc",
+      "name": "Telegram - Enviar Link Calendly",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        10656,
+        640
+      ],
+      "webhookId": "84810e28-6bfb-47c1-af88-9059e6b61f74",
+      "credentials": {
+        "telegramApi": {
+          "id": "yoYPsWbKfx1sUF6Q",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "chrissantacruz0603@gmail.com",
+          "mode": "list",
+          "cachedResultName": "chrissantacruz0603@gmail.com"
+        },
+        "start": "={{ $json.fecha_entrevista || $now.plus({days: 3}).toISO() }}",
+        "end": "={{ $json.fecha_entrevista ? new Date(new Date($json.fecha_entrevista).getTime() + 60*60*1000).toISOString() : $now.plus({days: 3, hours: 1}).toISO() }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $('Code - Separar Seleccionado y Rechazados').item.json.email_candidato }}"
+          ],
+          "description": "Entrevista con el candidato seleccionado para el cargo.",
+          "summary": "=Entrevista de Reclutamiento - {{ $('Code - Separar Seleccionado y Rechazados').item.json.nombre_candidato || 'Candidato' }}"
+        }
+      },
+      "id": "950fcd3c-76ea-4931-a129-511316f78300",
+      "name": "Google Calendar - Crear Evento",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        10432,
+        640
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "p5TpbXFu59lZlDrL",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const entrevistas = $input.all();\nconst candidatosConPuntaje = entrevistas.map(entrevista => {\n  const puntajes = entrevista.json.puntajes || [];\n  const puntajeTotal = puntajes.reduce((sum, p) => sum + (parseFloat(p.valor) || 0), 0);\n  const puntajePromedio = puntajes.length > 0 ? puntajeTotal / puntajes.length : 0;\n  \n  return {\n    ...entrevista.json,\n    puntaje_calculado: puntajePromedio,\n    puntaje_total: puntajeTotal,\n    numero_criterios: puntajes.length\n  };\n});\n\ncandidatosConPuntaje.sort((a, b) => b.puntaje_calculado - a.puntaje_calculado);\n\nconst top10 = candidatosConPuntaje.slice(0, 10);\n\nreturn { candidatos: top10 };"
+      },
+      "id": "ed8d640e-22ab-4fa6-b1a3-6d0993fd4b76",
+      "name": "Code - Calcular Puntaje Total",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9536,
+        968
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $('Code - Extraer Número Candidato').item.json.isCommand }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "false"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ca740150-dbb5-44ca-9dcd-89eab99819cc",
+      "name": "IF - Filtrar Comandos",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        9312,
+        640
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Generar Ranking": {
+      "main": [
+        [
+          {
+            "node": "Set - Inyectar ConfiguraciÃ³n Ranking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Marcar Seleccionado": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Crear Evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Inyectar ConfiguraciÃ³n Ranking": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Obtener Candidatos del Cargo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Analizar Ranking",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Analizar Ranking": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Enviar Ranking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Obtener Top 10": {
+      "main": [
+        [
+          {
+            "node": "Code - Separar Seleccionado y Rechazados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Separar Seleccionado y Rechazados": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Notificar Seleccionado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger - Selección": {
+      "main": [
+        [
+          {
+            "node": "Code - Extraer Número Candidato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Enviar Ranking": {
+      "main": [
+        [
+          {
+            "node": "Respond - Ranking Generado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Notificar Seleccionado": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Marcar Seleccionado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Crear Evento": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Enviar Link Calendly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Obtener Candidatos del Cargo": {
+      "main": [
+        [
+          {
+            "node": "Code - Calcular Puntaje Total",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Calcular Puntaje Total": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Analizar Ranking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Extraer Número Candidato": {
+      "main": [
+        [
+          {
+            "node": "IF - Filtrar Comandos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Filtrar Comandos": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Obtener Top 10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "36894365-7702-4904-a604-50a8ef55b667",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "57155abb96eef8d7ff8327058db1fba28d06e12650184b5e162bb930e688a705"
+  },
+  "id": "FQmQMJMmKM0S71pF",
+  "tags": []
+}
