@@ -153,20 +153,20 @@
       "id": "bbdcc9e8-9d39-405e-9c4b-3a9a0d985b99",
       "name": "Set - Inyectar ConfiguraciÃ³n Filtro",
       "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
         -112,
-            {
-              "id": "id-2",
-              "name": "supabase_anon_key",
-              "value": "<SUPABASE_ANON_KEY>",
-              "type": "string"
-            },
-            {
-              "id": "id-3",
-              "name": "openai_api_key",
-              "value": "<OPENAI_API_KEY>",
-              "type": "string"
-            },
+        1264
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "responses": {
           "values": [
             {
               "content": "=Candidato:\nNombre: {{ $json.candidate.name }}\nSkills: {{ $json.candidate.skills.join(\", \") }}\nExperiencia: {{ JSON.stringify($json.candidate.experience) }}\nEducación: {{ JSON.stringify($json.candidate.education) }}\nProyectos: {{ JSON.stringify($json.candidate.projects) }}\n\nPuesto:\nTítulo: {{ $json.job.title }}\nSkills requeridas: {{ $json.job.required_skills.join(\", \") }}\nDescripción: {{ $json.job.description }}\n\nTarea:\n1. Analiza si el candidato usó IA para generar su CV\n2. Genera exactamente 2 preguntas abiertas usando las SKILLS REALES del candidato ({{ $json.candidate.skills.join(\", \") }}) y las requeridas por el puesto ({{ $json.job.required_skills.join(\", \") }})\n3. Calcula un score de 0-100 basado en: experiencia (40%), habilidades técnicas (30%), validación pública (20%)\n\nDevuelve un JSON con formato: {\"ai_detected\": boolean, \"ai_confidence\": número 0-100, \"score\": número 0-100, \"questions\": [{\"tipo\": \"abierta\", \"contenido\": \"pregunta con skill real\"}]}"
