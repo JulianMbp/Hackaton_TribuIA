@@ -3,9 +3,8 @@
 import { FileUpload } from '@/components/common/FileUpload';
 import { postulacionService } from '@/lib/api/services';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { Briefcase, CheckCircle, DollarSign, Filter, MapPin, Search, X } from 'lucide-react';
+import { Briefcase, Check, CheckCircle, DollarSign, Filter, MapPin, Search, X } from 'lucide-react';
 import React, { useState } from 'react';
-import { MapPin, DollarSign, Briefcase, Search, Filter, Check } from 'lucide-react';
 
 export interface Vacante {
   id: string;
@@ -27,6 +26,10 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
   const [busqueda, setBusqueda] = useState('');
   const [filtroModalidad, setFiltroModalidad] = useState<string>('todos');
   const [vacantesPostuladas, setVacantesPostuladas] = useState<Set<string>>(new Set());
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [vacanteSeleccionada, setVacanteSeleccionada] = useState<Vacante | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
 
   const modalidadConfig = {
     remoto: { label: 'Remoto', color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
@@ -43,11 +46,64 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
     return matchesBusqueda && matchesModalidad;
   });
 
-  const handlePostular = (vacanteId: string, titulo: string) => {
-    setVacantesPostuladas((prev) => new Set(prev).add(vacanteId));
+  const handlePostular = (vacante: Vacante) => {
+    setVacanteSeleccionada(vacante);
+    setModalAbierto(true);
+    setMensaje(null);
+  };
 
-    // Mostrar mensaje de confirmación
-    alert(`¡Aplicaste para el puesto de ${titulo}!\n\nPronto te notificaremos sobre el estado de tu postulación.`);
+  const cerrarModal = () => {
+    setModalAbierto(false);
+    setVacanteSeleccionada(null);
+    setMensaje(null);
+    setSubiendo(false);
+  };
+
+  const handleSubirCV = async (file: File) => {
+    if (!vacanteSeleccionada || !user) {
+      setMensaje({
+        tipo: 'error',
+        texto: 'Error: No se pudo identificar la vacante o el usuario.',
+      });
+      return;
+    }
+
+    setSubiendo(true);
+    setMensaje(null);
+
+    try {
+      const candidatoId = user.id || undefined;
+      const response = await postulacionService.postularse(
+        vacanteSeleccionada.id,
+        file,
+        candidatoId
+      );
+
+      if (response.success) {
+        setMensaje({
+          tipo: 'exito',
+          texto: '¡Postulación exitosa! Tu CV ha sido procesado y pronto te notificaremos sobre el estado de tu postulación.',
+        });
+        setVacantesPostuladas((prev) => new Set(prev).add(vacanteSeleccionada.id));
+        
+        // Cerrar el modal después de 3 segundos
+        setTimeout(() => {
+          cerrarModal();
+        }, 3000);
+      } else {
+        setMensaje({
+          tipo: 'error',
+          texto: response.message || 'Error al procesar tu postulación. Por favor, intenta nuevamente.',
+        });
+      }
+    } catch (error) {
+      setMensaje({
+        tipo: 'error',
+        texto: 'Error inesperado al subir tu CV. Por favor, intenta nuevamente.',
+      });
+    } finally {
+      setSubiendo(false);
+    }
   };
 
   return (
@@ -145,7 +201,7 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
                   </button>
                 ) : (
                   <button
-                    onClick={() => handlePostular(vacante.id, vacante.titulo)}
+                    onClick={() => handlePostular(vacante)}
                     className="w-full px-4 py-2 bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg text-sm font-medium transition-colors duration-300"
                   >
                     Postularme
@@ -160,21 +216,21 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
       {/* Modal de Postulación */}
       {modalAbierto && vacanteSeleccionada && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-neutral-800 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto transition-colors duration-300">
             {/* Header del Modal */}
-            <div className="p-6 border-b border-neutral-200 flex items-center justify-between">
+            <div className="p-6 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between transition-colors duration-300">
               <div>
-                <h3 className="text-lg font-bold text-neutral-900">Postularme a</h3>
-                <p className="text-sm text-neutral-600 mt-1">
+                <h3 className="text-lg font-bold text-neutral-900 dark:text-white transition-colors duration-300">Postularme a</h3>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 transition-colors duration-300">
                   {vacanteSeleccionada.titulo} - {vacanteSeleccionada.empresa}
                 </p>
               </div>
               <button
                 onClick={cerrarModal}
-                className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors"
                 disabled={subiendo}
               >
-                <X className="w-5 h-5 text-neutral-600" />
+                <X className="w-5 h-5 text-neutral-600 dark:text-neutral-400 transition-colors duration-300" />
               </button>
             </div>
 
@@ -182,10 +238,10 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
             <div className="p-6">
               {mensaje && (
                 <div
-                  className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+                  className={`mb-4 p-3 rounded-lg flex items-center gap-2 transition-colors duration-300 ${
                     mensaje.tipo === 'exito'
-                      ? 'bg-green-50 text-green-800 border border-green-200'
-                      : 'bg-red-50 text-red-800 border border-red-200'
+                      ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-400 border border-green-200 dark:border-green-800'
+                      : 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-800'
                   }`}
                 >
                   {mensaje.tipo === 'exito' ? (
@@ -199,7 +255,7 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
 
               {!mensaje || mensaje.tipo === 'error' ? (
                 <>
-                  <p className="text-sm text-neutral-600 mb-4">
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4 transition-colors duration-300">
                     Sube tu CV en formato PDF para postularte a esta vacante. El sistema procesará
                     automáticamente tu información.
                   </p>
@@ -213,7 +269,7 @@ export const PropuestasTrabajo: React.FC<PropuestasTrabajoProps> = ({ vacantes }
 
                   {subiendo && (
                     <div className="mt-4 text-center">
-                      <p className="text-sm text-neutral-600">Subiendo y procesando tu CV...</p>
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400 transition-colors duration-300">Subiendo y procesando tu CV...</p>
                     </div>
                   )}
                 </>
