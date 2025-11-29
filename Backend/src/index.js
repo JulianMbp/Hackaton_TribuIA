@@ -55,10 +55,45 @@ app.use('*', (req, res) => {
 // Manejo de errores generales
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'Error interno del servidor',
+  console.error('❌ Error capturado:', err.message);
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Stack trace:', err.stack);
+  }
+
+  // Clasificar errores y dar respuestas apropiadas
+  let statusCode = 500;
+  let errorMessage = 'Error interno del servidor';
+
+  // Errores de base de datos
+  if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+    statusCode = 503;
+    errorMessage = 'Servicio de base de datos no disponible';
+  } else if (err.code === 'ETIMEDOUT') {
+    statusCode = 504;
+    errorMessage = 'Timeout al conectar con la base de datos';
+  } else if (err.code === '42P01') {
+    statusCode = 500;
+    errorMessage = 'Error de configuración: tabla no existe en la base de datos';
+  } else if (err.code === '42703') {
+    statusCode = 500;
+    errorMessage = 'Error de configuración: columna no existe en la base de datos';
+  } else if (err.code === '23505') {
+    // Violación de constraint único (duplicado)
+    statusCode = 409;
+    errorMessage = 'El recurso ya existe (duplicado)';
+  } else if (err.code === '23503') {
+    // Violación de foreign key
+    statusCode = 400;
+    errorMessage = 'Referencia inválida en los datos enviados';
+  } else if (err.message && err.message.includes('column')) {
+    statusCode = 500;
+    errorMessage = 'Error de configuración de base de datos';
+  }
+
+  res.status(statusCode).json({
+    error: errorMessage,
     details: process.env.NODE_ENV === 'development' ? err.message : undefined,
+    code: process.env.NODE_ENV === 'development' ? err.code : undefined,
   });
 });
 
