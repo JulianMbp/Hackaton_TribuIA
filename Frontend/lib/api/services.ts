@@ -13,7 +13,7 @@ import {
   Resultado,
 } from '@/lib/types';
 import { apiClient } from './client';
-import { API_ENDPOINTS } from './config';
+import { API_CONFIG, API_ENDPOINTS } from './config';
 
 // ============================================
 // AUTH SERVICES
@@ -221,5 +221,65 @@ export const historialService = {
     estado?: string;
   }): Promise<ApiResponse<HistorialAplicacion>> => {
     return apiClient.post(API_ENDPOINTS.HISTORIAL, data);
+  },
+};
+
+// ============================================
+// POSTULACIONES SERVICES
+// ============================================
+
+export interface PostulacionResponse {
+  success: boolean;
+  message: string;
+  cv_url: string;
+  n8n_response?: any;
+  warning?: string;
+}
+
+export const postulacionService = {
+  postularse: async (
+    cargoId: string,
+    cvFile: File,
+    candidatoId?: string
+  ): Promise<ApiResponse<PostulacionResponse>> => {
+    const formData = new FormData();
+    formData.append('cv', cvFile);
+    formData.append('cargo_id', cargoId);
+    if (candidatoId) {
+      formData.append('candidato_id', candidatoId);
+    }
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.POSTULACIONES}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.error || 'Error al postularse',
+        };
+      }
+
+      return {
+        success: true,
+        data,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Error al postularse',
+      };
+    }
   },
 };

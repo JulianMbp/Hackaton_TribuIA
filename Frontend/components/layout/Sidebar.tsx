@@ -7,6 +7,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { AnimatedLogo } from '@/components/common/AnimatedLogo';
 
 const menuItems = [
   {
@@ -44,6 +45,12 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="hidden md:flex md:flex-shrink-0">
       <div className="flex flex-col w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-700 transition-colors duration-300">
+        {/* Logo Header */}
+        <div className="px-4 py-6 border-b border-neutral-200 dark:border-neutral-700">
+          <AnimatedLogo size="sm" showText={true} animate={true} />
+        </div>
+
+        {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2">
           {menuItems.map((item) => {
             const isActive = pathname === item.path || pathname?.startsWith(item.path + '/');

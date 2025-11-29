@@ -1,0 +1,81 @@
+{
+  "info": {
+    "_postman_id": "9d1f6d5a-2c4b-4f6e-b0d5-abcdef123456",
+    "name": "Preguntas_RespuestasWorkflow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Colección para probar los webhooks `filter_candidate` y `evaluate_answers` del workflow `Preguntas_RespuestasWorkflow.json`."
+  },
+  "item": [
+    {
+      "name": "Filter Candidate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"candidate\": {\n    \"id\": \"candidate-uuid-123\",\n    \"name\": \"Juan Pérez\",\n    \"skills\": [\"React\", \"Node.js\"],\n    \"experience\": [ { \"years\": 3, \"company\": \"Acme\" } ]\n  },\n  \"job\": {\n    \"id\": \"job-uuid-456\",\n    \"title\": \"Frontend Developer\",\n    \"required_skills\": [\"React\", \"TypeScript\"]\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/webhook/filter_candidate",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "webhook",
+            "filter_candidate"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Evaluate Answers",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"entrevista_id\": \"entrevista-uuid-789\",\n  \"respuestas\": [\n    {\n      \"pregunta_id\": \"preg-1\",\n      \"contenido\": \"Explica un proyecto donde usaste React para mejorar rendimiento.\"\n    },\n    {\n      \"pregunta_id\": \"preg-2\",\n      \"contenido\": \"Describe un reto técnico que resolviste con Node.js.\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/webhook/evaluate_answers",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "webhook",
+            "evaluate_answers"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5678",
+      "type": "string"
+    }
+  ]
+}

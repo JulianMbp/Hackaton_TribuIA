@@ -43,6 +43,9 @@ export const API_ENDPOINTS = {
   HISTORIAL: '/api/historial',
   HISTORIAL_BY_CANDIDATO: (candidatoId: string) => `/api/historial?candidato_id=${candidatoId}`,
 
+  // Postulaciones
+  POSTULACIONES: '/api/postulaciones',
+
   // WebSocket
   WS_INTERVIEW: (entrevistaId: string) => `/ws/interview/${entrevistaId}`,
 };
