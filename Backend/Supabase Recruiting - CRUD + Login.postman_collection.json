@@ -1155,6 +1155,296 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Postulaciones (Backend API)",
+			"item": [
+				{
+					"name": "1. Login Backend - Candidato",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        pm.collectionVariables.set(\"backend_auth_token\", jsonData.data.token);",
+									"        pm.collectionVariables.set(\"backend_candidato_id\", jsonData.data.user.id);",
+									"        pm.collectionVariables.set(\"backend_candidato_nombre\", jsonData.data.user.nombre);",
+									"        console.log(\"✅ Backend Token guardado:\", jsonData.data.token);",
+									"        console.log(\"✅ Backend Candidato ID:\", jsonData.data.user.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{login_email}}\",\n  \"password\": \"{{login_password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{backend_url}}/api/auth/login/candidato",
+							"host": ["{{backend_url}}"],
+							"path": ["api", "auth", "login", "candidato"]
+						},
+						"description": "Login en el backend Express como candidato. Guarda automáticamente el token y candidato_id."
+					},
+					"response": []
+				},
+				{
+					"name": "1. Login Backend - Empresa",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        pm.collectionVariables.set(\"backend_auth_token\", jsonData.data.token);",
+									"        pm.collectionVariables.set(\"backend_empresa_id\", jsonData.data.user.id);",
+									"        console.log(\"✅ Backend Token guardado:\", jsonData.data.token);",
+									"        console.log(\"✅ Backend Empresa ID:\", jsonData.data.user.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{login_email}}\",\n  \"password\": \"{{login_password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{backend_url}}/api/auth/login/empresa",
+							"host": ["{{backend_url}}"],
+							"path": ["api", "auth", "login", "empresa"]
+						},
+						"description": "Login en el backend Express como empresa."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Obtener Cargos (Backend)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const cargos = pm.response.json();",
+									"    if (Array.isArray(cargos) && cargos.length > 0) {",
+									"        const cargoActivo = cargos.find(c => c.estado === 'activo') || cargos[0];",
+									"        if (cargoActivo) {",
+									"            pm.collectionVariables.set(\"backend_cargo_id\", cargoActivo.id);",
+									"            pm.collectionVariables.set(\"backend_cargo_nombre\", cargoActivo.nombre || 'Sin nombre');",
+									"            console.log(\"✅ Backend Cargo ID guardado:\", cargoActivo.id);",
+									"            console.log(\"✅ Cargo:\", cargoActivo.nombre);",
+									"        }",
+									"    } else {",
+									"        console.log(\"⚠️ No hay cargos disponibles\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{backend_auth_token}}",
+								"type": "text",
+								"description": "Opcional"
+							}
+						],
+						"url": {
+							"raw": "{{backend_url}}/api/cargos",
+							"host": ["{{backend_url}}"],
+							"path": ["api", "cargos"]
+						},
+						"description": "Obtiene todos los cargos del backend y guarda automáticamente el primer cargo_id activo."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Postularse a un Cargo",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Verificar que tenemos los datos necesarios",
+									"const cargoId = pm.collectionVariables.get(\"backend_cargo_id\");",
+									"const candidatoId = pm.collectionVariables.get(\"backend_candidato_id\");",
+									"const token = pm.collectionVariables.get(\"backend_auth_token\");",
+									"",
+									"if (!cargoId) {",
+									"    console.log(\"⚠️ No hay backend_cargo_id. Ejecuta primero 'Obtener Cargos (Backend)'\");",
+									"}",
+									"",
+									"if (!candidatoId) {",
+									"    console.log(\"⚠️ No hay backend_candidato_id. Ejecuta primero 'Login Backend - Candidato'\");",
+									"}",
+									"",
+									"if (!token) {",
+									"    console.log(\"⚠️ No hay backend_auth_token. Ejecuta primero el login\");",
+									"}",
+									"",
+									"console.log(\"📋 Datos para postulación:\");",
+									"console.log(\"   Cargo ID:\", cargoId || \"(no configurado)\");",
+									"console.log(\"   Candidato ID:\", candidatoId || \"(no configurado)\");",
+									"console.log(\"   Token:\", token ? \"✅ Configurado\" : \"❌ No configurado\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 202) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.success) {",
+									"        console.log(\"✅ Postulación exitosa\");",
+									"        console.log(\"   CV URL:\", jsonData.cv_url);",
+									"        if (jsonData.warning) {",
+									"            console.log(\"⚠️ Advertencia:\", jsonData.warning);",
+									"        }",
+									"    }",
+									"} else {",
+									"    console.log(\"❌ Error en postulación:\", pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{backend_auth_token}}",
+								"type": "text",
+								"description": "Token obtenido del login"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "cv",
+									"type": "file",
+									"src": [],
+									"description": "Archivo PDF del CV (máximo 10MB)"
+								},
+								{
+									"key": "cargo_id",
+									"value": "{{backend_cargo_id}}",
+									"type": "text",
+									"description": "ID del cargo (se obtiene automáticamente de 'Obtener Cargos (Backend)')"
+								},
+								{
+									"key": "candidato_id",
+									"value": "{{backend_candidato_id}}",
+									"type": "text",
+									"description": "ID del candidato (se obtiene automáticamente del login)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{backend_url}}/api/postulaciones",
+							"host": ["{{backend_url}}"],
+							"path": ["api", "postulaciones"]
+						},
+						"description": "Endpoint principal para postularse a un cargo.\n\n**Flujo recomendado:**\n1. Ejecuta 'Login Backend - Candidato' para obtener token y candidato_id\n2. Ejecuta 'Obtener Cargos (Backend)' para obtener cargo_id\n3. Selecciona un archivo PDF en el campo 'cv'\n4. Envía la request\n\n**Nota:** Los IDs se llenan automáticamente si ejecutaste los pasos anteriores."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Obtener Historial de Postulaciones (Backend)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{backend_auth_token}}",
+								"type": "text",
+								"description": "Opcional"
+							}
+						],
+						"url": {
+							"raw": "{{backend_url}}/api/historial?candidato_id={{backend_candidato_id}}",
+							"host": ["{{backend_url}}"],
+							"path": ["api", "historial"],
+							"query": [
+								{
+									"key": "candidato_id",
+									"value": "{{backend_candidato_id}}",
+									"description": "ID del candidato (se obtiene automáticamente del login)"
+								}
+							]
+						},
+						"description": "Obtiene el historial de postulaciones de un candidato específico desde el backend."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Obtener CVs (Backend)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{backend_auth_token}}",
+								"type": "text",
+								"description": "Opcional"
+							}
+						],
+						"url": {
+							"raw": "{{backend_url}}/api/cvs",
+							"host": ["{{backend_url}}"],
+							"path": ["api", "cvs"]
+						},
+						"description": "Obtiene todos los CVs subidos al sistema desde el backend."
+					},
+					"response": []
+				}
+			],
+			"description": "Sección para probar el flujo completo de postulaciones usando el backend Express. Incluye login, obtención de cargos y postulación con CV."
 		}
 	],
 	"auth": {
@@ -1252,6 +1542,42 @@
 			"key": "login_password",
 			"value": "tu-password",
 			"type": "string"
+		},
+		{
+			"key": "backend_url",
+			"value": "http://localhost:3000",
+			"type": "string",
+			"description": "URL base del backend Express"
+		},
+		{
+			"key": "backend_auth_token",
+			"value": "",
+			"type": "string",
+			"description": "Token JWT obtenido del login del backend (se guarda automáticamente)"
+		},
+		{
+			"key": "backend_candidato_id",
+			"value": "",
+			"type": "string",
+			"description": "ID del candidato obtenido del login del backend (se guarda automáticamente)"
+		},
+		{
+			"key": "backend_cargo_id",
+			"value": "",
+			"type": "string",
+			"description": "ID del cargo obtenido del backend (se guarda automáticamente)"
+		},
+		{
+			"key": "backend_cargo_nombre",
+			"value": "",
+			"type": "string",
+			"description": "Nombre del cargo obtenido del backend (se guarda automáticamente)"
+		},
+		{
+			"key": "backend_empresa_id",
+			"value": "",
+			"type": "string",
+			"description": "ID de la empresa obtenido del login del backend (se guarda automáticamente)"
 		}
 	]
 }

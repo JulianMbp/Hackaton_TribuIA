@@ -1,0 +1,522 @@
+{
+  "info": {
+    "_postman_id": "postulaciones-collection-001",
+    "name": "Postulaciones - API Completa",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Colección completa para probar el endpoint de postulaciones. Incluye login automático y obtención de IDs.",
+    "version": "2.0.0"
+  },
+  "item": [
+    {
+      "name": "1. Autenticación",
+      "item": [
+        {
+          "name": "Login Candidato",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.collectionVariables.set(\"auth_token\", jsonData.data.token);",
+                  "        pm.collectionVariables.set(\"candidato_id\", jsonData.data.user.id);",
+                  "        pm.collectionVariables.set(\"candidato_nombre\", jsonData.data.user.nombre);",
+                  "        pm.collectionVariables.set(\"user_role\", jsonData.data.user.role);",
+                  "        console.log(\"✅ Token guardado:\", jsonData.data.token);",
+                  "        console.log(\"✅ Candidato ID:\", jsonData.data.user.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{candidato_email}}\",\n  \"password\": \"{{candidato_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/candidato",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login", "candidato"]
+            },
+            "description": "Login como candidato. Guarda automáticamente el token y el candidato_id."
+          },
+          "response": []
+        },
+        {
+          "name": "Login Empresa",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.collectionVariables.set(\"auth_token\", jsonData.data.token);",
+                  "        pm.collectionVariables.set(\"empresa_id\", jsonData.data.user.id);",
+                  "        pm.collectionVariables.set(\"empresa_nombre\", jsonData.data.user.nombre);",
+                  "        pm.collectionVariables.set(\"user_role\", jsonData.data.user.role);",
+                  "        console.log(\"✅ Token guardado:\", jsonData.data.token);",
+                  "        console.log(\"✅ Empresa ID:\", jsonData.data.user.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{empresa_email}}\",\n  \"password\": \"{{empresa_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/empresa",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login", "empresa"]
+            },
+            "description": "Login como empresa. Guarda automáticamente el token y el empresa_id."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Usuario Actual (Me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Obtiene la información del usuario autenticado usando el token guardado."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints de autenticación. Ejecuta primero el login para obtener el token automáticamente."
+    },
+    {
+      "name": "2. Consultas de Datos",
+      "item": [
+        {
+          "name": "Obtener Todos los Cargos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const cargos = pm.response.json();",
+                  "    if (Array.isArray(cargos) && cargos.length > 0) {",
+                  "        // Tomar el primer cargo activo, o el primero disponible",
+                  "        const cargoActivo = cargos.find(c => c.estado === 'activo') || cargos[0];",
+                  "        if (cargoActivo) {",
+                  "            pm.collectionVariables.set(\"cargo_id\", cargoActivo.id);",
+                  "            pm.collectionVariables.set(\"cargo_nombre\", cargoActivo.nombre || 'Sin nombre');",
+                  "            console.log(\"✅ Cargo ID guardado:\", cargoActivo.id);",
+                  "            console.log(\"✅ Cargo:\", cargoActivo.nombre);",
+                  "        }",
+                  "    } else {",
+                  "        console.log(\"⚠️ No hay cargos disponibles\");",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "description": "Opcional"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cargos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cargos"]
+            },
+            "description": "Obtiene todos los cargos disponibles y guarda automáticamente el primer cargo_id activo."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Cargo por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "description": "Opcional"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cargos/{{cargo_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cargos", "{{cargo_id}}"]
+            },
+            "description": "Obtiene los detalles de un cargo específico usando el cargo_id guardado."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Todos los Candidatos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "description": "Opcional"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/candidatos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "candidatos"]
+            },
+            "description": "Obtiene todos los candidatos disponibles."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Candidato por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "description": "Opcional"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/candidatos/{{candidato_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "candidatos", "{{candidato_id}}"]
+            },
+            "description": "Obtiene los detalles de un candidato específico usando el candidato_id guardado."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para consultar datos. Los IDs se guardan automáticamente para usar en otras requests."
+    },
+    {
+      "name": "3. Postulaciones",
+      "item": [
+        {
+          "name": "Postularse a un Cargo",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Verificar que tenemos los datos necesarios",
+                  "const cargoId = pm.collectionVariables.get(\"cargo_id\");",
+                  "const candidatoId = pm.collectionVariables.get(\"candidato_id\");",
+                  "const token = pm.collectionVariables.get(\"auth_token\");",
+                  "",
+                  "if (!cargoId) {",
+                  "    console.log(\"⚠️ No hay cargo_id. Ejecuta primero 'Obtener Todos los Cargos'\");",
+                  "}",
+                  "",
+                  "if (!candidatoId) {",
+                  "    console.log(\"⚠️ No hay candidato_id. Ejecuta primero 'Login Candidato' o proporciona uno manualmente\");",
+                  "}",
+                  "",
+                  "if (!token) {",
+                  "    console.log(\"⚠️ No hay token. Ejecuta primero 'Login Candidato' o 'Login Empresa'\");",
+                  "}",
+                  "",
+                  "console.log(\"📋 Datos para postulación:\");",
+                  "console.log(\"   Cargo ID:\", cargoId || \"(no configurado)\");",
+                  "console.log(\"   Candidato ID:\", candidatoId || \"(no configurado)\");",
+                  "console.log(\"   Token:\", token ? \"✅ Configurado\" : \"❌ No configurado\");"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 202) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success) {",
+                  "        console.log(\"✅ Postulación exitosa\");",
+                  "        console.log(\"   CV URL:\", jsonData.cv_url);",
+                  "        if (jsonData.warning) {",
+                  "            console.log(\"⚠️ Advertencia:\", jsonData.warning);",
+                  "        }",
+                  "    }",
+                  "} else {",
+                  "    console.log(\"❌ Error en postulación:\", pm.response.text());",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "description": "Token obtenido del login"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": [],
+                  "description": "Archivo PDF del CV (máximo 10MB)"
+                },
+                {
+                  "key": "cargo_id",
+                  "value": "{{cargo_id}}",
+                  "type": "text",
+                  "description": "ID del cargo (se obtiene automáticamente de 'Obtener Todos los Cargos')"
+                },
+                {
+                  "key": "candidato_id",
+                  "value": "{{candidato_id}}",
+                  "type": "text",
+                  "description": "ID del candidato (se obtiene automáticamente del login, o proporciona uno manualmente)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/postulaciones",
+              "host": ["{{base_url}}"],
+              "path": ["api", "postulaciones"]
+            },
+            "description": "Endpoint principal para postularse a un cargo.\n\n**Flujo recomendado:**\n1. Ejecuta 'Login Candidato' para obtener token y candidato_id\n2. Ejecuta 'Obtener Todos los Cargos' para obtener cargo_id\n3. Selecciona un archivo PDF en el campo 'cv'\n4. Envía la request\n\n**Nota:** Los IDs se llenan automáticamente si ejecutaste los pasos anteriores."
+          },
+          "response": []
+        },
+        {
+          "name": "Postularse - Manual (con IDs específicos)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "cargo_id",
+                  "value": "",
+                  "type": "text",
+                  "description": "Pega aquí un cargo_id específico"
+                },
+                {
+                  "key": "candidato_id",
+                  "value": "",
+                  "type": "text",
+                  "description": "Pega aquí un candidato_id específico (opcional)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/postulaciones",
+              "host": ["{{base_url}}"],
+              "path": ["api", "postulaciones"]
+            },
+            "description": "Versión manual donde puedes especificar los IDs directamente sin usar las variables automáticas."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para postularse a cargos. Requiere token y cargo_id."
+    },
+    {
+      "name": "4. Historial y Verificación",
+      "item": [
+        {
+          "name": "Obtener Historial de Postulaciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "description": "Opcional"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/historial?candidato_id={{candidato_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "historial"],
+              "query": [
+                {
+                  "key": "candidato_id",
+                  "value": "{{candidato_id}}",
+                  "description": "ID del candidato (se obtiene automáticamente del login)"
+                }
+              ]
+            },
+            "description": "Obtiene el historial de postulaciones de un candidato específico."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Todos los CVs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "description": "Opcional"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cvs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cvs"]
+            },
+            "description": "Obtiene todos los CVs subidos al sistema."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para verificar las postulaciones realizadas."
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string",
+      "description": "URL base del backend"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string",
+      "description": "Token JWT obtenido del login (se guarda automáticamente)"
+    },
+    {
+      "key": "candidato_email",
+      "value": "candidato@example.com",
+      "type": "string",
+      "description": "Email del candidato para login"
+    },
+    {
+      "key": "candidato_password",
+      "value": "password123",
+      "type": "string",
+      "description": "Contraseña del candidato para login"
+    },
+    {
+      "key": "empresa_email",
+      "value": "empresa@example.com",
+      "type": "string",
+      "description": "Email de la empresa para login"
+    },
+    {
+      "key": "empresa_password",
+      "value": "password123",
+      "type": "string",
+      "description": "Contraseña de la empresa para login"
+    },
+    {
+      "key": "cargo_id",
+      "value": "",
+      "type": "string",
+      "description": "UUID del cargo (se obtiene automáticamente de 'Obtener Todos los Cargos')"
+    },
+    {
+      "key": "cargo_nombre",
+      "value": "",
+      "type": "string",
+      "description": "Nombre del cargo (se guarda automáticamente)"
+    },
+    {
+      "key": "candidato_id",
+      "value": "",
+      "type": "string",
+      "description": "UUID del candidato (se obtiene automáticamente del login)"
+    },
+    {
+      "key": "candidato_nombre",
+      "value": "",
+      "type": "string",
+      "description": "Nombre del candidato (se guarda automáticamente)"
+    },
+    {
+      "key": "empresa_id",
+      "value": "",
+      "type": "string",
+      "description": "UUID de la empresa (se obtiene automáticamente del login)"
+    },
+    {
+      "key": "user_role",
+      "value": "",
+      "type": "string",
+      "description": "Rol del usuario (candidato o empresa)"
+    }
+  ]
+}
