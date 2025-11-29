@@ -6,11 +6,28 @@ const router = express.Router();
 // Listar entrevistas
 router.get('/', async (req, res, next) => {
   try {
-    // La tabla entrevistas (ver tablas-supabase.sql) no tiene columna created_at,
-    // por lo que ordenamos por started_at (si existe) y luego por id como fallback estable.
-    const { rows } = await pool.query(
-      'SELECT * FROM entrevistas ORDER BY started_at DESC NULLS LAST, id DESC'
-    );
+    const { cargo_id, candidato_id } = req.query;
+    let query = 'SELECT * FROM entrevistas';
+    const values = [];
+    const conditions = [];
+
+    if (cargo_id) {
+      conditions.push(`cargo_id = $${values.length + 1}`);
+      values.push(cargo_id);
+    }
+
+    if (candidato_id) {
+      conditions.push(`candidato_id = $${values.length + 1}`);
+      values.push(candidato_id);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY started_at DESC NULLS LAST, id DESC';
+
+    const { rows } = await pool.query(query, values);
     res.json(rows);
   } catch (err) {
     next(err);
@@ -102,6 +119,66 @@ router.delete('/:id', async (req, res, next) => {
     const { rowCount } = await pool.query('DELETE FROM entrevistas WHERE id = $1', [id]);
     if (!rowCount) return res.status(404).json({ error: 'Entrevista no encontrada' });
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Obtener entrevistas con puntajes agrupados por cargo y candidato
+router.get('/con-puntajes', async (req, res, next) => {
+  try {
+    const { cargo_id } = req.query;
+    
+    let query = `
+      SELECT 
+        e.id as entrevista_id,
+        e.candidato_id,
+        e.cargo_id,
+        e.estado as entrevista_estado,
+        e.metodo,
+        e.puntaje_final,
+        e.started_at,
+        e.finished_at,
+        c.nombre as candidato_nombre,
+        c.email as candidato_email,
+        c.skills as candidato_skills,
+        c.experiencia_anios as candidato_experiencia,
+        json_agg(
+          json_build_object(
+            'id', p.id,
+            'criterio', p.criterio,
+            'valor', p.valor
+          ) ORDER BY p.valor DESC
+        ) FILTER (WHERE p.id IS NOT NULL) as puntajes
+      FROM entrevistas e
+      LEFT JOIN candidatos c ON e.candidato_id = c.id
+      LEFT JOIN puntajes p ON e.id = p.entrevista_id
+    `;
+    
+    const values = [];
+    
+    if (cargo_id) {
+      query += ' WHERE e.cargo_id = $1';
+      values.push(cargo_id);
+    }
+    
+    query += `
+      GROUP BY 
+        e.id, e.candidato_id, e.cargo_id, e.estado, e.metodo, 
+        e.puntaje_final, e.started_at, e.finished_at,
+        c.nombre, c.email, c.skills, c.experiencia_anios
+      ORDER BY e.puntaje_final DESC NULLS LAST, e.started_at DESC NULLS LAST
+    `;
+
+    const { rows } = await pool.query(query, values);
+    
+    // Transformar los puntajes de JSON a array
+    const result = rows.map(row => ({
+      ...row,
+      puntajes: row.puntajes || []
+    }));
+    
+    res.json(result);
   } catch (err) {
     next(err);
   }
