@@ -4,6 +4,7 @@ require('dotenv').config();
 require('./db'); // Inicializa la conexión con Supabase (Pool de PG)
 
 // Routers de recursos de negocio
+const authRouter = require('./routes/auth.routes');
 const empresasRouter = require('./routes/empresas.routes');
 const candidatosRouter = require('./routes/candidatos.routes');
 const cargosRouter = require('./routes/cargos.routes');
@@ -33,6 +34,7 @@ app.get('/', (req, res) => {
 });
 
 // Namespace de API
+app.use('/api/auth', authRouter);
 app.use('/api/empresas', empresasRouter);
 app.use('/api/candidatos', candidatosRouter);
 app.use('/api/cargos', cargosRouter);
@@ -98,7 +100,8 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
+// Escuchar en 0.0.0.0 para aceptar conexiones desde fuera del contenedor Docker
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`📚 API base disponible en http://localhost:${PORT}/api`);
 });

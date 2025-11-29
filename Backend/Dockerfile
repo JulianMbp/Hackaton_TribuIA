@@ -14,9 +14,10 @@ COPY . .
 
 # Variables de entorno por defecto (modo desarrollo para hot reload)
 ENV NODE_ENV=development
+ENV PORT=8000
 
 # Puerto que expone la app (debe coincidir con PORT en .env)
-EXPOSE 3000
+EXPOSE 8000
 
 # Comando por defecto (se puede sobrescribir en docker-compose)
 CMD ["npm", "start"]

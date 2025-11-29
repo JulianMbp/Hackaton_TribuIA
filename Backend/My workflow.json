@@ -5,6 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "job",
+        "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
@@ -36,7 +37,7 @@
         "promptType": "define",
         "text": "={{\n`Datos de la empresa (JSON):\n${JSON.stringify($node[\"HTTP Request\"].json, null, 2)}\n\nTexto libre que envía la empresa:\n${$node[\"Webhook\"].json.body.texto_libre}\n\nIdioma deseado para la oferta:\n${$node[\"Webhook\"].json.body.idioma || \"es\"}\n\nGenera la oferta siguiendo EXACTAMENTE la estructura JSON indicada en las instrucciones del sistema.\n`\n}}",
         "options": {
-          "systemMessage": "Eres un asistente experto en reclutamiento y redacción de ofertas laborales.\n\nTarea:\n- A partir del contexto de una empresa (JSON) y un texto libre enviado por la empresa\n  sobre lo que cree que necesita, debes proponer una oferta de trabajo completa\n  y estructurada en JSON.\n\nLa salida DEBE ser ÚNICAMENTE un JSON válido, sin texto extra, con esta estructura EXACTA:\n\n{\n  \"titulo\": \"string\",\n  \"descripcion\": \"string\",\n  \"responsabilidades\": [\"string\", \"string\"],\n  \"requisitos\": [\"string\", \"string\"],\n  \"skills_requeridos\": \"string\",\n  \"nivel_experiencia\": \"junior | middle | senior\",\n  \"salario_min\": 0,\n  \"salario_max\": 0,\n  \"modalidad\": \"remoto | híbrido | presencial\",\n  \"idioma\": \"es | en | ...\",\n  \"notas_para_reclutador\": \"string\"\n}\n\nTen en cuenta:\n- Usa el idioma solicitado por el usuario.\n- Ajusta el tono al tipo de empresa (sector, país, descripción).\n- Si faltan datos, haz supuestos razonables y explícalos en \"notas_para_reclutador\"."
+          "systemMessage": "Eres un asistente experto en reclutamiento y redacción de ofertas laborales.\n\nTarea:\n- A partir del contexto de una empresa (JSON) y un texto libre enviado por la empresa\n  sobre lo que cree que necesita, debes proponer MÚLTIPLES opciones de oferta de trabajo.\n\nLa salida DEBE ser ÚNICAMENTE un JSON válido, sin texto extra, con esta estructura EXACTA:\n\n{\n  \"opciones\": [\n    {\n      \"id_opcion\": 1,\n      \"titulo\": \"string\",\n      \"descripcion\": \"string\",\n      \"responsabilidades\": [\"string\", \"string\"],\n      \"requisitos\": [\"string\", \"string\"],\n      \"skills_requeridos\": \"string\",\n      \"nivel_experiencia\": \"junior | middle | senior\",\n      \"salario_min\": 0,\n      \"salario_max\": 0,\n      \"modalidad\": \"remoto | híbrido | presencial\",\n      \"idioma\": \"es | en | ...\",\n      \"notas_para_reclutador\": \"string\"\n    },\n    {\n      \"id_opcion\": 2,\n      ...\n    }\n  ]\n}\n\nInstrucciones:\n- Genera entre 2 y 4 opciones diferentes en el array \"opciones\".\n- Usa el idioma solicitado por el usuario.\n- Ajusta el tono al tipo de empresa (sector, país, descripción).\n- Si faltan datos, haz supuestos razonables y explícalos en \"notas_para_reclutador\"."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -62,7 +63,7 @@
       "typeVersion": 1.3,
       "position": [
         272,
-        112
+        144
       ],
       "id": "3fbda990-c48e-4863-9c4b-7612bcc1aa78",
       "name": "OpenAI Chat Model",
@@ -91,35 +92,35 @@
           "parameters": [
             {
               "name": "empresa_id",
-              "value": "={{$node[\"Webhook\"].json.body.empresa_id}}"
+              "value": "={{ $json.body.empresa_id }}"
             },
             {
               "name": "nombre",
-              "value": "={{ $json.titulo }}"
+              "value": "={{ $json.body.opcion.titulo }}"
             },
             {
               "name": "descripcion",
-              "value": "={{ $json.descripcion }}"
+              "value": "={{ $json.body.opcion.descripcion }}"
             },
             {
               "name": "salario_min",
-              "value": "={{ $json.salario_min }}"
+              "value": "={{ $json.body.opcion.salario_min }}"
             },
             {
               "name": "salario_max",
-              "value": "={{ $json.salario_max }}"
+              "value": "={{ $json.body.opcion.salario_max }}"
             },
             {
               "name": "modalidad",
-              "value": "={{ $json.modalidad }}"
+              "value": "={{ $json.body.opcion.modalidad }}"
             },
             {
               "name": "skills_requeridos",
-              "value": "={{ $json.skills_requeridos }}"
+              "value": "={{ $json.body.opcion.skills_requeridos }}"
             },
             {
               "name": "nivel_experiencia",
-              "value": "={{ $json.nivel_experiencia }}"
+              "value": "={{ $json.body.opcion.nivel_experiencia }}"
             },
             {
               "name": "estado",
@@ -132,24 +133,68 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        848,
-        -32
+        0,
+        336
       ],
       "id": "881df8f2-32c6-458f-ad74-ae20226d5f15",
       "name": "HTTP Request1"
     },
     {
       "parameters": {
-        "jsCode": "// La respuesta del AI Agent viene como string en json.output\nconst raw = $json.output;\n\n// Intentamos parsear a JSON\nlet oferta;\ntry {\n  oferta = JSON.parse(raw);\n} catch (e) {\n  throw new Error('No se pudo parsear la salida del AI Agent como JSON: ' + e.message);\n}\n\n// Devolvemos la oferta como json plano para usarla en los siguientes nodos\nreturn [\n  {\n    json: oferta,\n  },\n];"
+        "jsCode": "// La respuesta del AI Agent viene como string en json.output\nconst raw = $json.output;\n\nlet data;\ntry {\n  data = JSON.parse(raw);\n} catch (e) {\n  throw new Error('No se pudo parsear la salida del AI Agent como JSON: ' + e.message);\n}\n\n// Validamos que tenga \"opciones\" como array\nif (!data.opciones || !Array.isArray(data.opciones)) {\n  throw new Error('El JSON de la IA debe tener un array \"opciones\".');\n}\n\n// Devolvemos directamente el objeto con opciones\nreturn [\n  {\n    json: data, // { opciones: [ ... ] }\n  },\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        624,
+        576,
         -32
       ],
       "id": "072f0b8b-fd5d-4d8f-aca3-4a89218d28c3",
       "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        768,
+        -32
+      ],
+      "id": "86f15dff-0fe9-4c11-a61e-79f17b1c5e1a",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/ia/confirmar-oferta",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -176,
+        336
+      ],
+      "id": "e7255800-fba1-4f1c-bccf-a100dbeaa55c",
+      "name": "Webhook1",
+      "webhookId": "86e3df43-eebe-41dc-9933-97aa1bcf56c4"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        176,
+        336
+      ],
+      "id": "50cfb044-aa2c-4604-a7fb-88cca0de118e",
+      "name": "Respond to Webhook1"
     }
   ],
   "pinData": {},
@@ -202,7 +247,29 @@
       "main": [
         [
           {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
             "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
             "type": "main",
             "index": 0
           }

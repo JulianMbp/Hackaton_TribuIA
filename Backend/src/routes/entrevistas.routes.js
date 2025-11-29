@@ -6,7 +6,11 @@ const router = express.Router();
 // Listar entrevistas
 router.get('/', async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM entrevistas ORDER BY started_at DESC NULLS LAST, created_at DESC');
+    // La tabla entrevistas (ver tablas-supabase.sql) no tiene columna created_at,
+    // por lo que ordenamos por started_at (si existe) y luego por id como fallback estable.
+    const { rows } = await pool.query(
+      'SELECT * FROM entrevistas ORDER BY started_at DESC NULLS LAST, id DESC'
+    );
     res.json(rows);
   } catch (err) {
     next(err);

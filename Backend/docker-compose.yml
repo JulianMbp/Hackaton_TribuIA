@@ -1,11 +1,9 @@
-version: "3.9"
-
 services:
   backend:
     build: .
     container_name: supabase-backend
     ports:
-      - "${PORT-3000}:3000"
+      - "${PORT:-8000}:${PORT:-8000}"
     env_file:
       - .env
     # Hot reload: montamos el código fuente dentro del contenedor y usamos nodemon
