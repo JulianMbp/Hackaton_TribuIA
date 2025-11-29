@@ -1,6 +1,6 @@
 "use client";
 import { Loading } from "@/components/common/Loading";
-import { candidatoService, cargoService } from "@/lib/api/services";
+import { candidatoService, cargoService, HistorialAplicacion, historialService } from "@/lib/api/services";
 import { useNotification } from "@/lib/contexts/NotificationContext";
 import { Candidato, Cargo } from "@/lib/types";
 import { ArrowLeft, CheckCircle, Clock, TrendingUp, Users, XCircle } from "lucide-react";
@@ -35,11 +35,12 @@ export default function CandidatosDashboard() {
 
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
+  const [historial, setHistorial] = useState<HistorialAplicacion[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Postulaciones derivadas de cargos + candidatos:
-  // - Si no hay candidatos, igual mostramos las vacantes con 0 candidatos.
-  // - Vinculamos candidatos al cargo por `cargo_aplicado` (id de cargo o nombre).
+  // Postulaciones derivadas de cargos + historial de aplicaciones:
+  // - Usamos historial_aplicaciones para vincular candidatos a cargos
+  // - Si no hay historial, igual mostramos las vacantes con 0 candidatos.
   const postulaciones: Postulacion[] = useMemo(() => {
     if (!cargos.length) return [];
 
@@ -50,43 +51,47 @@ export default function CandidatosDashboard() {
       map[cargo.id] = { cargo, candidatos: [] };
     });
 
-    // Función auxiliar para encontrar el id de cargo al que pertenece un candidato
-    const findCargoIdForCandidate = (c: Candidato): string | null => {
-      if (!c.cargo_aplicado) return null;
-
-      // 1) Intentar por id de cargo (UUID)
-      const byId = cargos.find((cg) => cg.id === c.cargo_aplicado);
-      if (byId) return byId.id;
-
-      // 2) Intentar por nombre (caso legacy donde se guarda el título)
-      const lowerApplied = c.cargo_aplicado.toLowerCase();
-      const byName = cargos.find(
-        (cg) => cg.nombre && cg.nombre.toLowerCase() === lowerApplied
-      );
-      return byName ? byName.id : null;
-    };
-
-    // Asignar candidatos a sus cargos
+    // Crear un mapa de candidatos por ID para acceso rápido
+    const candidatosMap = new Map<string, Candidato>();
     candidatos.forEach((c) => {
-      const cargoId = findCargoIdForCandidate(c);
+      candidatosMap.set(c.id, c);
+    });
+
+    // Asignar candidatos a sus cargos usando historial_aplicaciones
+    historial.forEach((h) => {
+      const cargoId = h.cargo_id;
       if (!cargoId || !map[cargoId]) return;
 
+      const candidato = candidatosMap.get(h.candidato_id);
+      if (!candidato) return;
+
       const experiencia =
-        typeof c.experiencia_anios === 'number'
-          ? `${c.experiencia_anios} años`
+        typeof candidato.experiencia_anios === 'number'
+          ? `${candidato.experiencia_anios} años`
           : 'Sin dato';
 
-      const profesion = c.skills || 'Perfil general';
+      const profesion = candidato.skills || 'Perfil general';
 
-      const fechaPostulacion = c.created_at
-        ? new Date(c.created_at).toISOString().slice(0, 10)
+      const fechaPostulacion = h.fecha
+        ? new Date(h.fecha).toISOString().slice(0, 10)
+        : candidato.created_at
+        ? new Date(candidato.created_at).toISOString().slice(0, 10)
         : '';
 
-      const estado: CandidateStatus = 'pendiente';
+      // Mapear estado del historial al estado del candidato
+      let estado: CandidateStatus = 'pendiente';
+      const estadoLower = (h.estado || '').toLowerCase();
+      if (estadoLower.includes('aprobado') || estadoLower.includes('approved') || estadoLower.includes('aceptado')) {
+        estado = 'aprobado';
+      } else if (estadoLower.includes('rechazado') || estadoLower.includes('rejected') || estadoLower.includes('rechaz')) {
+        estado = 'rechazado';
+      } else {
+        estado = 'pendiente';
+      }
 
       map[cargoId].candidatos.push({
-        id: c.id,
-        nombre: c.nombre,
+        id: candidato.id,
+        nombre: candidato.nombre,
         profesion,
         experiencia,
         estado,
@@ -118,7 +123,7 @@ export default function CandidatosDashboard() {
       const cb = cargos.find((c) => c.id === b.id)?.created_at || '';
       return cb.localeCompare(ca);
     });
-  }, [cargos, candidatos]);
+  }, [cargos, candidatos, historial]);
 
   // Candidatos sugeridos simples: top por años de experiencia
   const sugeridos: CandidatoSugerido[] = useMemo(() => {
@@ -162,9 +167,10 @@ export default function CandidatosDashboard() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [cargosRes, candidatosRes] = await Promise.all([
+        const [cargosRes, candidatosRes, historialRes] = await Promise.all([
           cargoService.getAll(),
           candidatoService.getAll(),
+          historialService.getAll(),
         ]);
 
         if (cargosRes.success && cargosRes.data) {
@@ -173,6 +179,10 @@ export default function CandidatosDashboard() {
 
         if (candidatosRes.success && candidatosRes.data) {
           setCandidatos(candidatosRes.data);
+        }
+
+        if (historialRes.success && historialRes.data) {
+          setHistorial(historialRes.data);
         }
       } catch (error) {
         console.error(error);

@@ -97,7 +97,7 @@
           "parameters": [
             {
               "name": "candidato_id",
-              "value": "={{ $('HTTP Request - Guardar Candidato').item.json[0].id }}"
+              "value": "={{ $('Set - Inyectar ConfiguraciÃ³n Candidato').item.json.candidato_id }}"
             },
             {
               "name": "url_archivo",
@@ -151,7 +151,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={ \"candidato_id\": \"{{ $('HTTP Request - Guardar Candidato').item.json[0].id }}\", \"cargo_id\": \"{{ $('Set - Inyectar ConfiguraciÃ³n Candidato').item.json.cargo_id }}\", \"estado\": \"{{ $('Set - Inyectar ConfiguraciÃ³n Candidato').item.json.estado || 'aplicado' }}\" }",
+        "jsonBody": "={ \"candidato_id\": \"{{ $('Set - Inyectar ConfiguraciÃ³n Candidato').item.json.candidato_id }}\", \"cargo_id\": \"{{ $('Set - Inyectar ConfiguraciÃ³n Candidato').item.json.cargo_id }}\", \"estado\": \"{{ $('Set - Inyectar ConfiguraciÃ³n Candidato').item.json.estado || 'aplicado' }}\" }",
         "options": {}
       },
       "id": "56f3124d-03e1-47d7-9649-c7122cd9e6d4",
@@ -347,8 +347,8 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://ctvbtlmxdmryckxnhjug.supabase.co/rest/v1/candidatos",
+        "method": "PATCH",
+        "url": "=https://ctvbtlmxdmryckxnhjug.supabase.co/rest/v1/candidatos?id=eq.{{ $('Set - Inyectar ConfiguraciÃ³n Candidato').item.json.candidato_id }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -372,11 +372,11 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"nombre\": \"{{ $json.nombre }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"password\": \"{{ $json.password }}\",\n  \"telefono\": \"{{ $json.telefono }}\",\n  \"pais\": \"{{ $json.pais }}\",\n  \"ciudad\": \"{{ $json.ciudad }}\",\n  \"experiencia_anios\": {{ $json.experiencia_anios }},\n  \"educacion\": \"{{ $json.educacion }}\",\n  \"skills\": \"{{ $json.skills }}\",\n  \"cargo_aplicado\": \"{{ $json.cargo_aplicado }}\",\n  \"portafolio_url\": \"{{ $json.portafolio_url }}\",\n  \"github_url\": \"{{ $json.github_url }}\",\n  \"descripcion\": \"{{ $json.descripcion }}\"\n}",
+        "jsonBody": "={\n  \"nombre\": \"{{ $json.nombre }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"telefono\": \"{{ $json.telefono }}\",\n  \"pais\": \"{{ $json.pais }}\",\n  \"ciudad\": \"{{ $json.ciudad }}\",\n  \"experiencia_anios\": {{ $json.experiencia_anios }},\n  \"educacion\": \"{{ $json.educacion }}\",\n  \"skills\": \"{{ $json.skills }}\",\n  \"cargo_aplicado\": \"{{ $json.cargo_aplicado }}\",\n  \"portafolio_url\": \"{{ $json.portafolio_url }}\",\n  \"github_url\": \"{{ $json.github_url }}\",\n  \"descripcion\": \"{{ $json.descripcion }}\"\n}",
         "options": {}
       },
       "id": "311b4d65-1da6-4718-a1ce-a0406fc02369",
-      "name": "HTTP Request - Guardar Candidato",
+      "name": "HTTP Request - Actualizar Candidato",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
@@ -526,14 +526,14 @@
       "main": [
         [
           {
-            "node": "HTTP Request - Guardar Candidato",
+            "node": "HTTP Request - Actualizar Candidato",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "HTTP Request - Guardar Candidato": {
+    "HTTP Request - Actualizar Candidato": {
       "main": [
         [
           {

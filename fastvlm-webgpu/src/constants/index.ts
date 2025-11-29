@@ -37,9 +37,14 @@ export const TIMING = {
 } as const;
 
 const DEFAULT_PROMPT = "Describe what you see in one sentence.";
+
+// Prompt para detección de lectura durante entrevista
+const READING_DETECTION_PROMPT = "Observe the person's facial expressions and eye movements carefully. Analyze if they are reading text by looking for: 1) Eye movements that indicate scanning or reading (left-to-right, up-down movements), 2) Facial expressions showing concentration or focus on reading, 3) Head movements that suggest following text, 4) Any indication that they are looking at a screen or paper. Respond with a JSON object containing: {\"is_reading\": boolean, \"confidence\": number (0-100), \"reasoning\": \"brief explanation\"}. Focus specifically on eye gestures and facial expressions to determine if the person is actively reading.";
+
 export const PROMPTS = {
   default: DEFAULT_PROMPT,
   placeholder: DEFAULT_PROMPT,
+  readingDetection: READING_DETECTION_PROMPT,
 
   suggestions: [
     DEFAULT_PROMPT,

@@ -27,10 +27,12 @@ export default function PanelCandidatoPage() {
   const mapHistorialToPostulaciones = (historial: HistorialAplicacion[]): Postulacion[] => {
     return historial.map((item) => {
       // Mapear estados del backend a los estados del frontend
-      let estado: 'pendiente' | 'entrevista' | 'rechazado' | 'aceptado' = 'pendiente';
+      let estado: 'pendiente' | 'entrevista' | 'evaluando' | 'rechazado' | 'aceptado' = 'pendiente';
       const estadoLower = (item.estado || '').toLowerCase();
       
-      if (estadoLower.includes('entrevista') || estadoLower.includes('interview')) {
+      if (estadoLower.includes('evaluando') || estadoLower.includes('evaluating') || estadoLower.includes('evaluacion')) {
+        estado = 'evaluando';
+      } else if (estadoLower.includes('entrevista') || estadoLower.includes('interview')) {
         estado = 'entrevista';
       } else if (estadoLower.includes('rechazado') || estadoLower.includes('rejected') || estadoLower.includes('rechaz')) {
         estado = 'rechazado';

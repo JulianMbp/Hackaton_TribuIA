@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Briefcase, Calendar, Building2, Filter, ExternalLink, CheckCircle2, Video, Sparkles, Clock } from 'lucide-react';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { Briefcase, Building2, Calendar, CheckCircle2, Clock, ExternalLink, Filter, Sparkles, Video } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
 
 export interface Postulacion {
   id: string;
   puesto: string;
   empresa: string;
-  estado: 'pendiente' | 'entrevista' | 'rechazado' | 'aceptado';
+  estado: 'pendiente' | 'entrevista' | 'evaluando' | 'rechazado' | 'aceptado';
   fecha: string;
   logo?: string;
   microFrontendUrl?: string;
@@ -20,6 +21,7 @@ interface MisPostulacionesProps {
 
 export const MisPostulaciones: React.FC<MisPostulacionesProps> = ({ postulaciones }) => {
   const router = useRouter();
+  const { token } = useAuth();
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
 
   const estadoConfig = {
@@ -34,6 +36,12 @@ export const MisPostulaciones: React.FC<MisPostulacionesProps> = ({ postulacione
       color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
       borderColor: 'border-blue-200 dark:border-blue-800',
       icon: <Video className="w-4 h-4" />,
+    },
+    evaluando: {
+      label: 'En Evaluación',
+      color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+      borderColor: 'border-purple-200 dark:border-purple-800',
+      icon: <CheckCircle2 className="w-4 h-4" />,
     },
     rechazado: {
       label: 'Rechazado',
@@ -61,6 +69,30 @@ export const MisPostulaciones: React.FC<MisPostulacionesProps> = ({ postulacione
   const handleIniciarEntrevista = (postulacion: Postulacion) => {
     // Aquí se redirige a la página de entrevista con IA
     router.push(`/entrevista-ia?postulacion=${postulacion.id}&puesto=${encodeURIComponent(postulacion.puesto)}&empresa=${encodeURIComponent(postulacion.empresa)}`);
+  };
+
+  const handleIniciarEntrevistaExterna = (postulacion: Postulacion) => {
+    // Obtener el token del localStorage si no está en el contexto
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+    
+    if (!authToken) {
+      alert('No se encontró el token de autenticación. Por favor, inicia sesión nuevamente.');
+      return;
+    }
+
+    // URL del frontend externo de entrevista
+    const entrevistaUrl = process.env.NEXT_PUBLIC_ENTREVISTA_URL || 'http://localhost:5173';
+    
+    // Construir la URL con los parámetros necesarios
+    const params = new URLSearchParams({
+      token: authToken,
+      postulacionId: postulacion.id,
+      puesto: postulacion.puesto,
+      empresa: postulacion.empresa,
+    });
+
+    // Redirigir a la entrevista externa
+    window.location.href = `${entrevistaUrl}?${params.toString()}`;
   };
 
   const postulacionesFiltradas = postulaciones.filter((p) =>
@@ -182,6 +214,24 @@ export const MisPostulaciones: React.FC<MisPostulacionesProps> = ({ postulacione
                       {estadoConfig[postulacion.estado].icon}
                       {estadoConfig[postulacion.estado].label}
                     </span>
+
+                    {/* Botón de entrevista para postulaciones pendientes o en entrevista */}
+                    {(postulacion.estado === 'pendiente' || postulacion.estado === 'entrevista') && (
+                      <button
+                        onClick={() => handleIniciarEntrevistaExterna(postulacion)}
+                        className="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-bold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl group"
+                      >
+                        <Video className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                        Realizar Entrevista
+                      </button>
+                    )}
+
+                    {/* Mensaje para postulaciones en evaluación */}
+                    {postulacion.estado === 'evaluando' && (
+                      <div className="text-xs text-purple-600 dark:text-purple-400 font-medium italic">
+                        ✓ Entrevista enviada - Serás contactado en los próximos días
+                      </div>
+                    )}
 
                     {/* Botones para candidatos aprobados */}
                     {postulacion.estado === 'aceptado' && (

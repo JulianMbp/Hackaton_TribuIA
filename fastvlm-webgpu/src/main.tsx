@@ -1,13 +1,16 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
-import "./index.css";
+import { InterviewProvider } from "./context/InterviewContext.tsx";
 import { VLMProvider } from "./context/VLMContext.tsx";
+import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <VLMProvider>
-      <App />
+      <InterviewProvider>
+        <App />
+      </InterviewProvider>
     </VLMProvider>
   </React.StrictMode>,
 );
